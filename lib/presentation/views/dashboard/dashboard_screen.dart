@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:smart_stock/presentation/widgets/promotion_banner_carousel.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../widgets/app_drawer.dart';
@@ -153,10 +154,11 @@ class DashboardScreen extends GetView<DashboardController> {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      PromotionBannerCarousel(),
                       _buildQuickActions(context, scheme, isDark)
                           .animate()
                           .fadeIn(delay: 50.ms, duration: 300.ms),
@@ -335,10 +337,10 @@ class DashboardScreen extends GetView<DashboardController> {
         const SizedBox(width: 12),
         _buildActionButton(
           context,
-          icon: Icons.analytics_rounded,
-          label: 'reports'.tr,
+          icon: Icons.shopping_bag_outlined,
+          label: 'orders'.tr,
           color: const Color(0xFF8B5CF6),
-          onTap: () => Get.toNamed('/reports'),
+          onTap: () => Get.toNamed('/orders'),
         ),
         const SizedBox(width: 12),
         _buildActionButton(

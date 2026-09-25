@@ -2,6 +2,7 @@ class User {
   final String id;
   final String username;
   final String password;
+  final String role;
   final String createdAt;
   final String? email;
   final String? fullName;
@@ -12,6 +13,7 @@ class User {
     this.id = '',
     required this.username,
     required this.password,
+    this.role = 'customer',
     this.createdAt = '',
     this.email,
     this.fullName,
@@ -27,6 +29,7 @@ class User {
       'email': email,
       'fullName': fullName,
       'phone': phone,
+      'role': role,
       'isActive': isActive,
       'createdAt': createdAt,
     };
@@ -38,6 +41,7 @@ class User {
       username: map['username'] ?? '',
       password: map['password'] ?? '',
       email: map['email'],
+      role: map['role'],
       fullName: map['fullName'],
       phone: map['phone'],
       isActive: map['isActive'] ?? true,
@@ -48,6 +52,7 @@ class User {
   User copyWith({
     String? id,
     String? username,
+    String? role,
     String? password,
     String? email,
     String? fullName,
@@ -60,6 +65,7 @@ class User {
       username: username ?? this.username,
       password: password ?? this.password,
       email: email ?? this.email,
+      role: role ?? this.role,
       fullName: fullName ?? this.fullName,
       phone: phone ?? this.phone,
       isActive: isActive ?? this.isActive,

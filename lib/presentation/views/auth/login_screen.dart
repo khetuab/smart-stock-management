@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:smart_stock/app/routes/app_routes.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 
@@ -214,6 +215,37 @@ class LoginScreen extends GetView<AuthController> {
                             )
                                 : Text(
                               'login'.tr,
+                              style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        )).animate().fadeIn(delay: 350.ms, duration: 300.ms),
+
+                        const SizedBox(height: 12),// Login button
+                        Obx(() => SizedBox(
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: (){
+                              Get.offAllNamed(AppRoutes.customerHome);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: scheme.primary,
+                              foregroundColor: scheme.onPrimary,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: controller.isLoading.value
+                                ? SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation<Color>(scheme.onPrimary),
+                              ),
+                            )
+                                : Text(
+                              'Guest'.tr,
                               style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
                             ),
                           ),

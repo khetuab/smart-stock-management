@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../config/cloudinary_config.dart';
+import 'video_compressor.dart';
 
 class CloudinaryService {
   static final CloudinaryService _instance = CloudinaryService._internal();
@@ -145,47 +147,194 @@ class CloudinaryService {
     }
   }
 
-  // Delete image from Cloudinary
-  Future<bool> deleteImage(String publicId) async {
+  /// Picks a video from the gallery, compresses it toward [maxSizeMb] if
+  /// it's larger than that (mobile/desktop only — see video_compressor.dart),
+  /// then uploads it to Cloudinary's *video* endpoint. Returns null if the
+  /// user cancelled the picker. Throws if the file is too large on web
+  /// (where there's no native compressor to shrink it) or if the upload
+  /// itself fails, so the caller can show a clear message either way.
+  Future<String?> uploadVideoFromGallery({
+    String? folder = 'media_posts',
+    int maxSizeMb = 10,
+    void Function(double progress)? onCompressionProgress,
+  }) async {
+    final picker = ImagePicker();
+    final video = await picker.pickVideo(source: ImageSource.gallery);
+    if (video == null) return null;
+
+    return uploadVideoXFile(
+      xFile: video,
+      folder: folder,
+      maxSizeMb: maxSizeMb,
+      onCompressionProgress: onCompressionProgress,
+    );
+  }
+
+  Future<String?> uploadVideoXFile({
+    required XFile xFile,
+    String? folder = 'media_posts',
+    int maxSizeMb = 10,
+    void Function(double progress)? onCompressionProgress,
+  }) async {
+    final sizeMb = (await xFile.length()) / (1024 * 1024);
+    String uploadPath = xFile.path;
+
+    if (sizeMb > maxSizeMb) {
+      if (kIsWeb) {
+        // light_compressor_v2 doesn't support web (no native encoder to
+        // call into from the browser) — there's nothing to shrink it with,
+        // so surface a clear message instead of silently uploading a huge
+        // file or failing with a cryptic Cloudinary error.
+        throw Exception(
+          'This video is ${sizeMb.toStringAsFixed(1)}MB. Please choose a '
+              'video under ${maxSizeMb}MB — automatic compression isn\'t '
+              'available in the web app.',
+        );
+      }
+      print('Video is ${sizeMb.toStringAsFixed(1)}MB — compressing toward ${maxSizeMb}MB before upload...');
+      uploadPath = await compressVideoIfNeeded(
+        xFile.path,
+        maxSizeMb: maxSizeMb,
+        onProgress: onCompressionProgress,
+      );
+    }
+
     try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final uploadFile = uploadPath == xFile.path ? xFile : XFile(uploadPath);
+      final bytes = await uploadFile.readAsBytes();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      final multipartFile = MultipartFile.fromBytes(
+        bytes,
+        filename: '$timestamp.mp4',
+        contentType: DioMediaType.parse('video/mp4'),
+      );
+
+      final formData = FormData.fromMap({
+        'file': multipartFile,
+        'upload_preset': CloudinaryConfig.uploadPreset,
+        'folder': folder ?? 'media_posts',
+        'public_id': timestamp.toString(),
+        'resource_type': 'video',
+      });
+
+      print('Uploading video to: ${CloudinaryConfig.videoUploadUrl}');
 
       final response = await _dio.post(
-        'https://api.cloudinary.com/v1_1/${CloudinaryConfig.cloudName}/image/destroy',
+        CloudinaryConfig.videoUploadUrl,
+        data: formData,
+        options: Options(
+          headers: {'Content-Type': 'multipart/form-data'},
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data is String
+            ? jsonDecode(response.data)
+            : response.data as Map<String, dynamic>;
+        final secureUrl = data['secure_url'] as String?;
+        print('Video upload successful: $secureUrl');
+        return secureUrl;
+      } else {
+        final errorData = response.data is String
+            ? jsonDecode(response.data)
+            : response.data as Map<String, dynamic>?;
+        final message = errorData?['error']?['message'] ?? 'Unknown error';
+        throw Exception('Cloudinary video upload failed: $message');
+      }
+    } on DioException catch (e) {
+      print('Dio error uploading video: ${e.message}');
+      throw Exception('Network error while uploading video: ${e.message}');
+    }
+  }
+
+  /// Cloudinary auto-generates a JPEG frame for any uploaded video at the
+  /// same public path with a `.jpg` extension — this just builds that URL
+  /// so a video post can show a static thumbnail before playback starts.
+  String getVideoThumbnailUrl(String videoUrl) {
+    try {
+      final uri = Uri.parse(videoUrl);
+      final path = uri.path;
+      final lastDot = path.lastIndexOf('.');
+      final newPath = '${lastDot == -1 ? path : path.substring(0, lastDot)}.jpg';
+      return uri.replace(path: newPath).toString();
+    } catch (_) {
+      return videoUrl;
+    }
+  }
+
+  Future<bool> deleteImage(String publicId) => _destroy(publicId, resourceType: 'image');
+
+  Future<bool> deleteVideo(String publicId) => _destroy(publicId, resourceType: 'video');
+
+  Future<bool> _destroy(String publicId, {required String resourceType}) async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final signature = _generateSignature({'public_id': publicId, 'timestamp': timestamp});
+
+      final response = await _dio.post(
+        'https://api.cloudinary.com/v1_1/${CloudinaryConfig.cloudName}/$resourceType/destroy',
         data: {
           'public_id': publicId,
           'api_key': CloudinaryConfig.apiKey,
           'timestamp': timestamp,
-          'signature': _generateSignature(publicId, timestamp),
+          'signature': signature,
         },
         options: Options(
-          validateStatus: (status) {
-            return status != null && status < 500;
-          },
+          validateStatus: (status) => status != null && status < 500,
         ),
       );
 
-      return response.statusCode == 200;
+      final result = response.data is Map ? response.data['result'] : null;
+      return response.statusCode == 200 && (result == 'ok' || result == 'not found');
     } catch (e) {
-      print('Error deleting image: $e');
+      print('Error deleting $resourceType: $e');
       return false;
     }
   }
 
-  // Generate signature for deletion
-  String _generateSignature(String publicId, int timestamp) {
-    final toSign = 'public_id=$publicId&timestamp=$timestamp${CloudinaryConfig.apiSecret}';
-    return 'signature_placeholder';
+  /// Cloudinary's signed-request scheme: every parameter *except* `file`,
+  /// `api_key`, `signature`, `resource_type` and `cloud_name` is sorted
+  /// alphabetically, joined as `key=value&key=value...`, the api secret is
+  /// appended directly (no separator), and the whole thing is SHA-1 hashed.
+  ///
+  /// The previous implementation returned a hardcoded placeholder string
+  /// here, which meant every delete request was silently rejected by
+  /// Cloudinary as an invalid signature — deleteImage() never actually
+  /// worked. This is the real implementation.
+  String _generateSignature(Map<String, dynamic> params) {
+    final sortedKeys = params.keys.toList()..sort();
+    final toSign = sortedKeys.map((k) => '$k=${params[k]}').join('&');
+    final bytes = utf8.encode('$toSign${CloudinaryConfig.apiSecret}');
+    return sha1.convert(bytes).toString();
   }
 
-  // Extract public ID from URL
+  /// Reconstructs a Cloudinary public_id (including its folder, if any)
+  /// from a delivery URL — e.g. `.../upload/v1712345678/media_posts/17123.mp4`
+  /// becomes `media_posts/17123`. The previous version only kept the last
+  /// path segment, silently dropping the folder — which meant a delete call
+  /// for anything uploaded with a `folder:` (i.e. everything in this app)
+  /// would target the wrong public_id even if the signature had been valid.
   String extractPublicId(String url) {
     try {
       final uri = Uri.parse(url);
-      final segments = uri.pathSegments;
-      final lastSegment = segments.last;
-      final publicId = lastSegment.split('.').first;
-      return publicId;
+      final segments = List<String>.from(uri.pathSegments);
+
+      final uploadIndex = segments.indexOf('upload');
+      var relevant = uploadIndex == -1 ? segments : segments.sublist(uploadIndex + 1);
+
+      // Drop a leading version segment like "v1712345678", if present.
+      if (relevant.isNotEmpty && RegExp(r'^v\d+$').hasMatch(relevant.first)) {
+        relevant = relevant.sublist(1);
+      }
+      if (relevant.isEmpty) return '';
+
+      final last = relevant.last;
+      final lastDot = last.lastIndexOf('.');
+      final nameWithoutExt = lastDot == -1 ? last : last.substring(0, lastDot);
+
+      return [...relevant.sublist(0, relevant.length - 1), nameWithoutExt].join('/');
     } catch (e) {
       print('Error extracting public ID: $e');
       return '';

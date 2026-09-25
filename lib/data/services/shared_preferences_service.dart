@@ -9,6 +9,22 @@ class SharedPreferencesService {
 
   late SharedPreferences _prefs;
 
+  // add to StorageKeys
+  static const String deviceRole = 'deviceRole'; // 'admin' | 'customer', set once
+  static const String guestName = 'guestName';
+  static const String guestPhone = 'guestPhone';
+
+// add to SharedPreferencesService
+  Future<void> saveDeviceRole(String role) => setString(StorageKeys.deviceRole, role);
+  String? getDeviceRole() => getString(StorageKeys.deviceRole);
+
+  Future<void> saveGuestCustomer({required String name, required String phone}) async {
+    await setString(StorageKeys.guestName, name);
+    await setString(StorageKeys.guestPhone, phone);
+  }
+  String? getGuestName() => getString(StorageKeys.guestName);
+  String? getGuestPhone() => getString(StorageKeys.guestPhone);
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
@@ -82,15 +98,23 @@ class SharedPreferencesService {
   String? getUsername() {
     return _prefs.getString(StorageKeys.username);
   }
+  String? getRole() {
+    return _prefs.getString(StorageKeys.role);
+  }
 
   Future<void> saveLoginSession(String username) async {
     await _prefs.setBool(StorageKeys.isLoggedIn, true);
     await _prefs.setString(StorageKeys.username, username);
   }
 
+  Future<void> saveRole(String role) async {
+    await _prefs.setString(StorageKeys.role, role);
+  }
+
   Future<void> clearLoginSession() async {
     await _prefs.setBool(StorageKeys.isLoggedIn, false);
     await _prefs.remove(StorageKeys.username);
+    await _prefs.remove(StorageKeys.role);
   }
 
   // Store info methods

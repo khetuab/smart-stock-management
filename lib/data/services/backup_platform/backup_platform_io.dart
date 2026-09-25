@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
@@ -114,15 +114,10 @@ Future<String> formatBackupSize(BackupFileInfo file) async {
 /// restore flow (which lists internal backups instead), but available if
 /// you want an "import from file" option later.
 Future<PickedBackup?> pickBackupFile() async {
-  final result = await FilePicker.platform.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: ['json'],
-  );
-  if (result == null || result.files.isEmpty) return null;
+  const typeGroup = XTypeGroup(label: 'JSON backups', extensions: ['json']);
+  final file = await openFile(acceptedTypeGroups: [typeGroup]);
+  if (file == null) return null;
 
-  final picked = result.files.first;
-  if (picked.path == null) return null;
-
-  final content = await File(picked.path!).readAsString();
-  return PickedBackup(name: picked.name, jsonContent: content);
+  final content = await file.readAsString();
+  return PickedBackup(name: file.name, jsonContent: content);
 }

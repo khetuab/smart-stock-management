@@ -51,6 +51,7 @@ class ThemeController extends GetxController {
   Future<void> setThemeMode(ThemeMode mode) async {
     themeMode.value = mode;
     Get.changeThemeMode(mode);
+    Get.changeTheme(isDarkMode ? darkTheme : lightTheme); // keep it in sync with the current seed color too
     await _prefs.setString(modeKey, _modeToString(mode));
   }
 
@@ -74,10 +75,12 @@ class ThemeController extends GetxController {
   /// Update the brand seed color and persist it
   Future<void> setSeedColor(String hex, {bool persist = true}) async {
     seedColor.value = AppTheme.colorFromHex(hex);
+    Get.changeTheme(isDarkMode ? darkTheme : lightTheme); // <-- pushes the live theme immediately
     if (persist) {
       await _prefs.setString(seedKey, hex);
     }
   }
+
 
   /// Get the current theme mode as a string for persistence
   String _modeToString(ThemeMode mode) {

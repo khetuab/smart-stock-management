@@ -5,6 +5,7 @@ import '../../data/services/shared_preferences_service.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/sale_model.dart';
 import '../../data/models/purchase_model.dart';
+import 'auth_controller.dart';
 import 'debt_controller.dart';
 
 class DashboardController extends GetxController {
@@ -32,18 +33,82 @@ class DashboardController extends GetxController {
   void onInit() {
     super.onInit();
     loadStoreInfo();
-    loadDashboardData();
+
+    // Customers never see Sales/Purchases/Low-stock analytics — pulling
+    // that data for every customer session wastes a Google Sheets round
+    // trip (and API quota) on data they'll never use. Only fetch it for
+    // the admin.
+    if (AuthController.to.isAdmin) {
+      loadDashboardData();
+    } else {
+      isLoading.value = false;
+    }
   }
 
   double get totalReceivables => DebtController.to.totalReceivables;
   double get totalPayables => DebtController.to.totalPayables;
 
-  void loadStoreInfo() {
+  /// Populates store branding (name/logo/currency/theme color/zakat).
+  ///
+  /// Previously this only read from local SharedPreferences — which is
+  /// ONLY ever populated by the Setup wizard. Any device that never ran
+  /// Setup (every customer device, or an admin session that just logs
+  /// back in on a fresh install) had nothing cached locally, so these
+  /// values silently stayed at their hardcoded fallback forever, no
+  /// matter what was actually saved in the 'StoreInfo' Google Sheet.
+  ///
+  /// Fix: show the local cache immediately (fast, works offline), then
+  /// fetch the 'StoreInfo' sheet — the real source of truth — and
+  /// refresh both the in-memory values AND the local cache from it.
+  Future<void> loadStoreInfo() async {
+    // Fast path — whatever's cached locally, shown immediately so the
+    // UI isn't blank while the network call below is in flight.
     storeName.value = _prefs.getString('storeName') ?? 'Smart Stock';
     storeLogo.value = _prefs.getString('storeLogo') ?? '';
     themeColor.value = _prefs.getString('themeColor') ?? '#2196F3';
     currency.value = _prefs.getString('currency') ?? 'ETB';
     zakatEnabled.value = _prefs.isZakatEnabled();
+
+    try {
+      await _sheets.init();
+      final data = await _sheets.getSheetDataWithHeaders('StoreInfo');
+      if (data.isEmpty) return;
+
+      dynamic firstOf(String key) {
+        final col = data[key];
+        if (col == null || col.isEmpty) return null;
+        return col.first;
+      }
+
+      final sheetStoreName = firstOf('Store Name')?.toString().trim();
+      final sheetStoreLogo = firstOf('Store Logo')?.toString().trim();
+      final sheetCurrency = firstOf('Currency')?.toString().trim();
+      final sheetThemeColor = firstOf('Theme Color')?.toString().trim();
+      final sheetZakat = firstOf('Zakat Enabled')?.toString().trim().toLowerCase();
+
+      if (sheetStoreName != null && sheetStoreName.isNotEmpty) {
+        storeName.value = sheetStoreName;
+        await _prefs.setString('storeName', sheetStoreName);
+      }
+      if (sheetStoreLogo != null && sheetStoreLogo.isNotEmpty) {
+        storeLogo.value = sheetStoreLogo;
+        await _prefs.setString('storeLogo', sheetStoreLogo);
+      }
+      if (sheetCurrency != null && sheetCurrency.isNotEmpty) {
+        currency.value = sheetCurrency;
+        await _prefs.setString('currency', sheetCurrency);
+      }
+      if (sheetThemeColor != null && sheetThemeColor.isNotEmpty) {
+        themeColor.value = sheetThemeColor;
+        await _prefs.setString('themeColor', sheetThemeColor);
+      }
+      if (sheetZakat != null) {
+        zakatEnabled.value = sheetZakat == 'true';
+      }
+    } catch (e) {
+      print('Error loading StoreInfo sheet: $e');
+      // Keep whatever the local-cache fast path already set above.
+    }
   }
 
   /// Parse dates with multiple formats including Google Sheets serial dates
@@ -57,10 +122,6 @@ class DashboardController extends GetxController {
     if (numericDate != null) {
       // Google Sheets date serial: days since December 30, 1899
       final parsedDate = DateTime(1899, 12, 30).add(Duration(days: numericDate));
-
-      // Debug output to verify parsing
-      // print('📅 [DATE PARSE] Serial $numericDate -> ${parsedDate.toIso8601String().split('T').first}');
-
       return parsedDate;
     }
 
@@ -140,7 +201,6 @@ class DashboardController extends GetxController {
 
   /// Get the start of the week (Monday)
   DateTime _getWeekStart(DateTime today) {
-    // In Dart, weekday returns 1 (Monday) to 7 (Sunday)
     final daysFromMonday = today.weekday - 1;
     return today.subtract(Duration(days: daysFromMonday));
   }
@@ -186,54 +246,30 @@ class DashboardController extends GetxController {
 
       final sales = await _loadSales();
 
-      // Debug: Print all sales with parsed dates
-      // print('📊 [DASHBOARD] Total sales loaded: ${sales.length}');
-      // for (var s in sales) {
-      //   final parsed = _parseFlexibleDate(s.date);
-      //   print('  - ${s.date} -> ${parsed?.toIso8601String().split('T').first ?? 'null'}');
-      // }
-
-      // Get date boundaries
       final today = _getToday();
       final weekStart = _getWeekStart(today);
-      final tomorrow = today.add(const Duration(days: 1));
 
-      // Debug output
-      print('📊 [DASHBOARD] Today: ${today.toIso8601String().split('T').first}');
-      print('📊 [DASHBOARD] Week Start: ${weekStart.toIso8601String().split('T').first}');
-
-      // Calculate Today Sales
       todaySales.value = sales.where((s) {
         final parsed = _parseFlexibleDate(s.date);
         return _isSameDay(parsed, today);
       }).fold(0.0, (sum, sale) => sum + sale.total);
 
-      // Calculate Weekly Sales (Monday to today inclusive)
       weeklySales.value = sales.where((s) {
         final parsed = _parseFlexibleDate(s.date);
         return _isWithinWeek(parsed, weekStart, today);
       }).fold(0.0, (sum, sale) => sum + sale.total);
 
-      // Calculate Monthly Sales
       monthlySales.value = sales.where((s) {
         final parsed = _parseFlexibleDate(s.date);
         return _isWithinMonth(parsed, DateTime.now());
       }).fold(0.0, (sum, sale) => sum + sale.total);
 
-      // Debug output for verification
-      print('📊 [DASHBOARD] Today Sales: ${todaySales.value}');
-      print('📊 [DASHBOARD] Weekly Sales: ${weeklySales.value}');
-      print('📊 [DASHBOARD] Monthly Sales: ${monthlySales.value}');
-
-      // Recent Sales (sorted by date, newest first)
       final sortedSales = _sortSalesByDate(sales);
       recentSales.value = sortedSales.take(5).toList();
 
-      // Low stock products
       lowStockProducts.value = products.where((p) => p.quantity <= p.minQuantity).toList();
       lowStockCount.value = lowStockProducts.length;
 
-      // Recent Purchases
       final purchases = await _loadPurchases();
       final sortedPurchases = _sortPurchasesByDate(purchases);
       recentPurchases.value = sortedPurchases.take(5).toList();
@@ -381,13 +417,15 @@ class DashboardController extends GetxController {
   }
 
   Future<void> refreshDashboard() async {
-    loadStoreInfo();
+    await loadStoreInfo();
 
     if (Get.isRegistered<ZakatController>()) {
       Get.find<ZakatController>().refreshZakatData();
     }
 
-    await loadDashboardData();
+    if (AuthController.to.isAdmin) {
+      await loadDashboardData();
+    }
   }
 
   String formatCurrency(double amount) {

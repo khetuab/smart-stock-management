@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../data/services/cloudinary_service.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../controllers/settings_controller.dart';
@@ -192,6 +193,14 @@ class SettingsScreen extends GetView<SettingsController> {
                           title: 'Language'.tr,
                           subtitle: controller.language.value.tr,
                           onTap: () => _showLanguagePicker(context),
+                        ),
+                        _buildSettingTile(
+                          context,
+                          icon: Icons.link_sharp,
+                          iconColor: const Color(0xFF7F108C),
+                          title: 'Social Media Links'.tr,
+                          subtitle: 'Social Media Links'.tr,
+                          onTap: () => Get.toNamed(AppRoutes.socialLinks),
                         ),
                       ],
                     ).animate().fadeIn(delay: 100.ms, duration: 500.ms),

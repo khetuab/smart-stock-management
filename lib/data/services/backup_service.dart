@@ -60,6 +60,10 @@ class BackupService extends GetxService {
       backupData['purchases'] = await _getAllPurchases();
       backupProgress.value = 0.8;
 
+
+      backupData['orders'] = await _getAllOrders();
+      backupProgress.value = 0.75;
+
       backupData['users'] = await _getAllUsers();
       backupProgress.value = 0.9;
 
@@ -108,6 +112,7 @@ class BackupService extends GetxService {
       backupData['sales'] = await _getAllSales();
       backupData['purchases'] = await _getAllPurchases();
       backupData['users'] = await _getAllUsers();
+      backupData['orders'] = await _getAllOrders();
       backupData['settings'] = await _getSettings();
       backupData['backupDate'] = DateTime.now().toIso8601String();
       backupData['appVersion'] = '1.0.0';
@@ -408,6 +413,7 @@ class BackupService extends GetxService {
 
       await _restoreStoreInfo(backupData['storeInfo']);
       await _restoreProducts(backupData['products']);
+      await _restoreOrders(backupData['orders']);
       await _restoreSales(backupData['sales']);
       await _restorePurchases(backupData['purchases']);
       await _restoreUsers(backupData['users']);
@@ -927,6 +933,31 @@ class BackupService extends GetxService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> _getAllOrders() async {
+    try {
+      final data = await _sheets.getSheetDataWithHeaders('Orders');
+      if (data.isEmpty) return [];
+
+      final orders = <Map<String, dynamic>>[];
+      final keys = data.keys.toList();
+
+      for (int i = 0; i < (data[keys.first]?.length ?? 0); i++) {
+        final order = <String, dynamic>{};
+        for (var key in keys) {
+          final values = data[key] ?? [];
+          if (i < values.length) {
+            order[key] = values[i];
+          }
+        }
+        orders.add(order);
+      }
+
+      return orders;
+    } catch (e) {
+      print('Error getting orders: $e');
+      return [];
+    }
+  }
   Future<Map<String, dynamic>> _getSettings() async {
     return {
       'themeColor': _prefs.getThemeColor(),
@@ -937,6 +968,36 @@ class BackupService extends GetxService {
   }
 
   // MARK: - Restore Methods
+
+  Future<void> _restoreOrders(List<dynamic>? data) async {
+    if (data == null || data.isEmpty) return;
+
+    try {
+      final orders = data.cast<Map<String, dynamic>>();
+      if (orders.isEmpty) return;
+
+      final headers = orders.first.keys.toList();
+      final values = <List<dynamic>>[];
+      values.add(headers);
+
+      for (var order in orders) {
+        final row = <dynamic>[];
+        for (var key in headers) {
+          row.add(order[key] ?? '');
+        }
+        values.add(row);
+      }
+
+      await _sheets.clearSheet('Orders');
+      await _sheets.writeToSheet(
+        sheetName: 'Orders',
+        values: values,
+      );
+    } catch (e) {
+      print('Error restoring orders: $e');
+      rethrow;
+    }
+  }
 
   Future<void> _restoreStoreInfo(Map<String, dynamic>? data) async {
     if (data == null || data.isEmpty) return;

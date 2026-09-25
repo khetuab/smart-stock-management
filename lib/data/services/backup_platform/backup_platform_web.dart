@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:html' as html;
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'backup_file_info.dart';
 
 Future<bool> requestBackupPermission() async => true; // the browser handles its own download prompt
@@ -52,16 +52,10 @@ Future<String> formatBackupSize(BackupFileInfo file) async {
 }
 
 Future<PickedBackup?> pickBackupFile() async {
-  final result = await FilePicker.platform.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: ['json'],
-    withData: true,
-  );
-  if (result == null || result.files.isEmpty) return null;
+  const typeGroup = XTypeGroup(label: 'JSON backups', extensions: ['json']);
+  final file = await openFile(acceptedTypeGroups: [typeGroup]);
+  if (file == null) return null;
 
-  final picked = result.files.first;
-  if (picked.bytes == null) return null;
-
-  final content = utf8.decode(picked.bytes!);
-  return PickedBackup(name: picked.name, jsonContent: content);
+  final content = await file.readAsString();
+  return PickedBackup(name: file.name, jsonContent: content);
 }

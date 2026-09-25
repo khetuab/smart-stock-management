@@ -88,9 +88,9 @@ class ProductController extends GetxController {
         print('❌ [PRODUCT] Error loading products ($retries retries left): $e');
         if (retries == 0) {
           Get.snackbar(
-            'Connection Error',
-            'Failed to load products from Google Sheets.',
-            colorText: Colors.red,
+              'Connection Error',
+              'Failed to load products from Google Sheets.',
+              colorText: Colors.red,
               snackPosition: SnackPosition.BOTTOM
           );
         } else {
@@ -283,17 +283,17 @@ class ProductController extends GetxController {
       }
 
       Get.snackbar(
-        'Success',
-        'Product added successfully',
-        colorText: Colors.green,
+          'Success',
+          'Product added successfully',
+          colorText: Colors.green,
           snackPosition: SnackPosition.BOTTOM
       );
 
     } catch (e) {
       Get.snackbar(
-        'Error',
-        'Failed to add product: $e',
-        colorText: Colors.red,
+          'Error',
+          'Failed to add product: $e',
+          colorText: Colors.red,
           snackPosition: SnackPosition.BOTTOM
       );
     } finally {
@@ -335,17 +335,17 @@ class ProductController extends GetxController {
         }
 
         Get.snackbar(
-          'Success',
-          'Product updated successfully',
-          colorText: Colors.green,
+            'Success',
+            'Product updated successfully',
+            colorText: Colors.green,
             snackPosition: SnackPosition.BOTTOM
         );
       }
     } catch (e) {
       Get.snackbar(
-        'Error',
-        'Failed to update product: $e',
-        colorText: Colors.red,
+          'Error',
+          'Failed to update product: $e',
+          colorText: Colors.red,
           snackPosition: SnackPosition.BOTTOM
       );
     } finally {
@@ -392,16 +392,16 @@ class ProductController extends GetxController {
         'Success',
         'Product deleted successfully',
         colorText: Colors.green,
-          snackPosition: SnackPosition.BOTTOM,
+        snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
 
     } catch (e) {
       await loadProducts(); // Re-sync if network write fails
       Get.snackbar(
-        'Error',
-        'Failed to delete product: $e',
-        colorText: Colors.red,
+          'Error',
+          'Failed to delete product: $e',
+          colorText: Colors.red,
           snackPosition: SnackPosition.BOTTOM
       );
     } finally {
@@ -409,6 +409,77 @@ class ProductController extends GetxController {
     }
   }
 
+  Product? getProductById(String id) {
+    try {
+      return products.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Reduces [productId]'s stock by [amount] and persists just that one
+  /// row (via [GoogleSheetsService.findRowIndexById] + `updateRow`)
+  /// instead of rewriting the whole Products sheet.
+  ///
+  /// Throws if the product can't be found or doesn't have enough stock,
+  /// so a caller (order approval) can show a clear message instead of
+  /// silently letting stock go negative. If the local quantity update
+  /// succeeds but the sheet write fails, the local change is rolled back
+  /// so the UI never shows stock that wasn't actually saved.
+  Future<void> reduceStock(String productId, double amount) async {
+    final index = products.indexWhere((p) => p.id == productId);
+    if (index == -1) {
+      throw Exception('Product not found.');
+    }
+
+    final original = products[index];
+    if (original.quantity < amount) {
+      throw Exception(
+        'Not enough stock for "${original.name}" (have ${original.quantity}, need $amount).',
+      );
+    }
+
+    final updated = original.copyWith(quantity: original.quantity - amount);
+    products[index] = updated;
+    applyFilters();
+
+    try {
+      await _sheets.init();
+      final rowIndex = await _sheets.findRowIndexById(
+        sheetName: 'Products',
+        idColumn: 'id',
+        id: productId,
+      );
+
+      if (rowIndex != null) {
+        await _sheets.updateRow(
+          sheetName: 'Products',
+          rowIndex: rowIndex,
+          rowData: [
+            updated.id,
+            updated.name,
+            updated.category,
+            updated.image,
+            updated.purchasePrice,
+            updated.sellingPrice,
+            updated.quantity,
+            updated.minQuantity,
+            updated.barcode,
+            updated.description,
+            updated.dateAdded,
+          ],
+        );
+      } else {
+        // Couldn't locate the row by id (e.g. older data) — fall back to
+        // a full rewrite rather than silently failing to persist.
+        await _rewriteAllProductsToSheet();
+      }
+    } catch (e) {
+      products[index] = original;
+      applyFilters();
+      rethrow;
+    }
+  }
 
   Future<void> _rewriteAllProductsToSheet() async {
     // Always include productHeaders as row 1

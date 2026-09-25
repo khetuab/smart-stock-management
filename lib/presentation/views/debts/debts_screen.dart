@@ -30,8 +30,8 @@ class DebtsScreen extends GetView<DebtController> {
           ],
           bottom: TabBar(
             tabs: [
-              Tab(text: 'owedToYou'.tr),
-              Tab(text: 'youOwe'.tr),
+              Tab(child : Text('owedToYou'.tr,style: TextStyle(color: Colors.white),)),
+              Tab(child: Text('youOwe'.tr,style: TextStyle(color: Colors.white),)),
             ],
           ),
         ),

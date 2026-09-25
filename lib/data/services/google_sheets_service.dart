@@ -181,6 +181,49 @@ class GoogleSheetsService {
     }
   }
 
+  /// Locates the 1-based sheet row number (row 1 = headers) of the row
+  /// whose [idColumn] cell equals [id]. Returns null if the sheet, the
+  /// column, or the id isn't found.
+  ///
+  /// This is what makes single-row updates possible — without it, every
+  /// status/message/stock change had to rewrite the entire sheet, which
+  /// is slow and risks clobbering concurrent writes.
+  Future<int?> findRowIndexById({
+    required String sheetName,
+    required String idColumn,
+    required String id,
+  }) async {
+    final rows = await readSheet(sheetName);
+    if (rows.isEmpty) return null;
+
+    final headers = rows.first.map((e) => e.toString()).toList();
+    final colIndex = headers.indexOf(idColumn);
+    if (colIndex == -1) return null;
+
+    for (var i = 1; i < rows.length; i++) {
+      final row = rows[i];
+      if (colIndex < row.length && row[colIndex]?.toString() == id) {
+        return i + 1; // Sheets rows are 1-indexed and row 1 is the header.
+      }
+    }
+    return null;
+  }
+
+  /// Overwrites a single existing row in place, e.g. row 5 becomes
+  /// `$sheetName!A5`. Use with [findRowIndexById] instead of
+  /// [writeToSheet]-ing the whole sheet for a one-row change.
+  Future<void> updateRow({
+    required String sheetName,
+    required int rowIndex,
+    required List<dynamic> rowData,
+  }) async {
+    await writeToSheet(
+      sheetName: sheetName,
+      values: [rowData],
+      range: '$sheetName!A$rowIndex',
+    );
+  }
+
   // Create a new sheet if it doesn't exist
   Future<void> createSheetIfNotExists(String sheetName) async {
     if (!_isInitialized) await init();

@@ -313,32 +313,33 @@ class SetupController extends GetxController {
       await _sheets.init();
       await _sheets.createSheetIfNotExists('Users');
 
-      final headers = ['ID', 'Username', 'Password', 'Created At'];
+      const userHeaders = ['ID', 'Username', 'Password', 'Created At', 'Role'];
       final existingData = await _sheets.readSheet('Users');
       final userId = existingData.length + 1;
 
-      final values = [
-        headers,
-        [
-          userId.toString(),
-          username.value,
-          password.value,
-          DateTime.now().toIso8601String(),
-        ]
+      final row = [
+        userId.toString(),
+        username.value,
+        password.value,
+        DateTime.now().toIso8601String(),
+        'admin', // the account created in the setup wizard is always the store owner
       ];
 
       if (existingData.isEmpty) {
-        await _sheets.writeToSheet(sheetName: 'Users', values: values);
+        await _sheets.writeToSheet(sheetName: 'Users', values: [userHeaders, row]);
       } else {
-        await _sheets.appendToSheet(
-          sheetName: 'Users',
-          rowData: [
-            userId.toString(),
-            username.value,
-            password.value,
-            DateTime.now().toIso8601String(),
-          ],
-        );
+        // Migrate a stale header row the same way Orders does, then append.
+        final currentHeaders = existingData.first.map((h) => h?.toString() ?? '').toList();
+        final isUpToDate = currentHeaders.length == userHeaders.length &&
+            List.generate(userHeaders.length, (i) => currentHeaders[i] == userHeaders[i])
+                .every((m) => m);
+        if (!isUpToDate) {
+          final allRows = List<List<dynamic>>.from(existingData);
+          allRows[0] = userHeaders;
+          await _sheets.clearSheet('Users');
+          await _sheets.writeToSheet(sheetName: 'Users', values: allRows);
+        }
+        await _sheets.appendToSheet(sheetName: 'Users', rowData: row);
       }
     } catch (e) {
       rethrow;

@@ -108,9 +108,9 @@ class LowStockScreen extends GetView<ProductController> {
                     ),
                   ],
                 ),
-                onTap: () {
-                  Get.toNamed('/add-product', arguments: product);
-                },
+                // onTap: () {
+                //   Get.toNamed('/add-product', arguments: product);
+                // },
               ),
             );
           },

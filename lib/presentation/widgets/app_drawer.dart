@@ -132,6 +132,8 @@ class AppDrawer extends StatelessWidget {
       _NavItemData(Icons.inventory_2_rounded, 'products'.tr, '/products'),
       _NavItemData(Icons.shopping_cart_rounded, 'sales'.tr, '/sales'),
       _NavItemData(Icons.shopping_bag_rounded, 'purchases'.tr, '/purchases'),
+     // _NavItemData(Icons.people_sharp, 'Manage Users'.tr, '/user-management'),
+      _NavItemData(Icons.campaign_outlined, 'promotions'.tr, '/promotions'),
       _NavItemData(Icons.receipt_long_rounded, 'saleHistory'.tr, '/sale-history'),
       _NavItemData(Icons.account_balance_wallet_rounded, 'debtsAndCredits'.tr, '/debts'),
       _NavItemData(Icons.bar_chart_rounded, 'reports'.tr, '/reports'),

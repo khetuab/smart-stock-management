@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:smart_stock/presentation/controllers/theme_controller.dart';
 import 'package:smart_stock/presentation/controllers/zakat_controller.dart';
 import '../../data/services/shared_preferences_service.dart';
 import '../../data/services/google_sheets_service.dart';
@@ -145,10 +146,19 @@ class SettingsController extends GetxController {
 
   Future<void> changeThemeColor(String color) async {
     themeColor.value = color;
-    await _prefs.setString('themeColor', color);
+
+    // Apply + persist via ThemeController so the live app theme updates
+    // immediately — this also handles the SharedPreferences write, since
+    // ThemeController.setSeedColor() saves under the same 'themeColor' key.
+    if (Get.isRegistered<ThemeController>()) {
+      await Get.find<ThemeController>().setSeedColor(color, persist: true);
+    } else {
+      await _prefs.setString('themeColor', color);
+    }
+
     await _updateStoreInfoInSheets();
 
-    // Update dashboard
+    // Update dashboard's own copy too
     _dashboard.themeColor.value = color;
 
     Get.snackbar(
@@ -158,6 +168,7 @@ class SettingsController extends GetxController {
       colorText: Colors.green,
     );
   }
+
 
   Future<void> changeLogo(String logoUrl) async {
     storeLogo.value = logoUrl;
@@ -373,6 +384,9 @@ class SettingsController extends GetxController {
     }
   }
 
+  // settings_controller.dart — add this import
+
+
   Future<void> performBackup() async {
     try {
       isLoading.value = true;
@@ -452,16 +466,16 @@ class SettingsController extends GetxController {
   Future<void> logout() async {
     final confirm = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title:  Text('Logout'.tr),
+        content:  Text('Are you sure you want to logout?'.tr),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'.tr),
           ),
           TextButton(
             onPressed: () => Get.back(result: true),
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            child:  Text('Logout'.tr, style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -506,6 +520,7 @@ class SettingsController extends GetxController {
         await _sheets.clearSheet('Zakat');
         await _sheets.clearSheet('Settings');
         await _sheets.clearSheet('Debts');
+        await _sheets.clearSheet('Orders');
 
         Get.snackbar(
           'Success',
