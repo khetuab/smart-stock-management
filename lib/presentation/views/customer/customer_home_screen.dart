@@ -30,8 +30,7 @@ class CustomerHomeScreen extends GetView<ProductController> {
 
     return Scaffold(
       bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 0),
-      body: Stack(
-          children:[
+      body:
             RefreshIndicator(
               onRefresh: () => controller.loadProducts(),
               child: CustomScrollView(
@@ -39,24 +38,26 @@ class CustomerHomeScreen extends GetView<ProductController> {
                 slivers: [
                   SliverAppBar(
                     leading: Obx(
-                    () => Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
-                      image: dashboard.storeLogo.value.isNotEmpty
-                      ? DecorationImage(image: NetworkImage(dashboard.storeLogo.value), fit: BoxFit.cover)
-                          : null,
+                          () => Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: SecretOwnerAccess(
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+                              image: dashboard.storeLogo.value.isNotEmpty
+                                  ? DecorationImage(image: NetworkImage(dashboard.storeLogo.value), fit: BoxFit.cover)
+                                  : null,
+                            ),
+                            child: dashboard.storeLogo.value.isEmpty
+                                ? const Icon(Icons.storefront_rounded, color: Colors.white)
+                                : null,
+                          ),
+                        ),
                       ),
-                      child: dashboard.storeLogo.value.isEmpty
-                      ? const Icon(Icons.storefront_rounded, color: Colors.white)
-                          : null,
-                      ),
-                    ),
                     ),
                     expandedHeight: 190,
                     floating: false,
@@ -209,16 +210,6 @@ class CustomerHomeScreen extends GetView<ProductController> {
                 ],
               ),
             ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 60,
-              child: SecretOwnerAccess(child: Container(color: Colors.transparent)),
-            ),
-
-          ]
-      ),
     );
   }
 }

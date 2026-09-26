@@ -34,7 +34,7 @@ android {
         applicationId = "com.tixolve.smart_stocks_t"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 10
+        versionCode = 1
         versionName = flutter.versionName
     }
 
