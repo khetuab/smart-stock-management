@@ -60,7 +60,7 @@
     <application
         android:label="Sadat Mejlis"
         android:name="${applicationName}"
-        android:icon="@mipmap/logo"
+        android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
         <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"

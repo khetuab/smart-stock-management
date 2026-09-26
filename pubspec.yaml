@@ -83,8 +83,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-flutter_icons:
-  image_path: "assets/logo.png"
+flutter_launcher_icons:
+  image_path: "assets/icon/icon.png"
+  remove_alpha_ios: true
   android: true
   ios: true
 
