@@ -1,4 +1,4 @@
-package com.tixolve.smart_stocks_t
+package com.tixolve.smart_stocks_ts
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -144,11 +144,6 @@ class CustomerSettingsScreen extends StatelessWidget {
                                   shadows: [Shadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 1))],
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                auth.phone.value.isEmpty ? 'No phone on file'.tr : auth.phone.value,
-                                style: const TextStyle(color: Colors.white70, fontSize: 12.5),
-                              ),
                             ],
                           ),
                         ),
@@ -164,18 +159,18 @@ class CustomerSettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _SectionHeader(title: 'Your Profile'.tr, icon: Icons.person_rounded, color: scheme.primary),
-                const SizedBox(height: 10),
-                SectionCard(
-                  padding: EdgeInsets.zero,
-                  child: _SettingTile(
-                    icon: Icons.badge_outlined,
-                    iconColor: scheme.primary,
-                    title: 'Edit Profile'.tr,
-                    subtitle: 'Update your phone number'.tr,
-                    onTap: () => _showEditProfileSheet(context, auth),
-                  ),
-                ),
+                // _SectionHeader(title: 'Your Profile'.tr, icon: Icons.person_rounded, color: scheme.primary),
+                // const SizedBox(height: 10),
+                // SectionCard(
+                //   padding: EdgeInsets.zero,
+                //   child: _SettingTile(
+                //     icon: Icons.badge_outlined,
+                //     iconColor: scheme.primary,
+                //     title: 'Edit Profile'.tr,
+                //     subtitle: 'Update your phone number'.tr,
+                //     onTap: () => _showEditProfileSheet(context, auth),
+                //   ),
+                // ),
 
                 const SizedBox(height: 24),
                 _SectionHeader(title: 'Appearance'.tr, icon: Icons.palette_outlined, color: const Color(0xFF6366F1)),
@@ -254,6 +249,19 @@ class CustomerSettingsScreen extends StatelessWidget {
                     ],
                   ),
                 )),
+                const SizedBox(height: 24),
+                _SectionHeader(title: 'Session'.tr, icon: Icons.logout_rounded, color: Colors.red),
+                const SizedBox(height: 10),
+                SectionCard(
+                  padding: EdgeInsets.zero,
+                  child: _SettingTile(
+                    icon: Icons.logout_rounded,
+                    iconColor: Colors.red,
+                    title: 'End Session'.tr,
+                    hideChevron: true,
+                    onTap: () => _confirmEndSession(context, auth),
+                  ),
+                ),
 
 
               ]),

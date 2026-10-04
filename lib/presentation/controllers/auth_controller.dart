@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:smart_stock/presentation/views/auth/customer_welcome_screen.dart';
+import 'package:smart_stock/presentation/views/auth/login_screen.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/google_sheets_service.dart';
 import '../../data/services/shared_preferences_service.dart';
@@ -343,7 +344,9 @@ class AuthController extends GetxController {
       phone.value = '';
       role.value = 'customer';
 
-      Get.offAll(()=>CustomerWelcomeScreen());
+      await _assignSilentGuest(); // <-- generate a fresh guest session immediately
+
+      Get.offAll(() => LoginScreen());
     } catch (e) {
       print('Error ending guest session: $e');
     }

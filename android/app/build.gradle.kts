@@ -16,7 +16,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tixolve.smart_stocks_t"
+    namespace = "com.tixolve.smart_stocks_ts"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -31,7 +31,7 @@ android {
 
     defaultConfig {
         // TODO: Change "com.example" to a unique package name before publishing to Play Store
-        applicationId = "com.tixolve.smart_stocks_t"
+        applicationId = "com.tixolve.smart_stocks_ts"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = 1
