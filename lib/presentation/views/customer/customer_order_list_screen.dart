@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import '../../controllers/auth_controller.dart';
 import '../../controllers/order_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../widgets/app_kits_collection.dart';
-import '../../widgets/customer_drawer.dart';
 import '../../widgets/order_list_shared.dart';
 import '../../widgets/customer_bottom_nar_bar.dart';
+import '../auth/customer_welcome_screen.dart';
 import '../orders/create_order_screen.dart';
 import '../orders/order_detail_screen.dart';
 
@@ -15,6 +16,41 @@ class CustomerOrderListScreen extends GetView<OrderController> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Get.find<AuthController>();
+    if (!auth.isLoggedIn.value) {
+      return Scaffold(
+        bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 2),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.lock_outline_rounded, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(height: 16),
+                Text(
+                  'Log in to see your orders'.tr,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Your past and current orders will show up here once you log in.'.tr,
+                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: () => Get.to(() => const CustomerWelcomeScreen()),
+                  child: Text('Log In / Create Account'.tr),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dashboard = Get.find<DashboardController>();

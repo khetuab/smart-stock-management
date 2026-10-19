@@ -157,9 +157,15 @@ class OrderController extends GetxController {
 
       // Enforced here, not just in the UI: a customer account only ever
       // gets its own orders back. The admin sees everything.
-      orders.value = isAdmin
-          ? all
-          : all.where((o) => o.customerUsername == _auth.username.value).toList();
+      if (isAdmin) {
+        orders.value = all;
+      } else if (_auth.isLoggedIn.value && _auth.username.value.isNotEmpty) {
+        orders.value = all.where((o) => o.customerUsername == _auth.username.value).toList();
+      } else {
+        // Not logged in — never show anyone's orders, not even ones with a
+        // blank customerUsername.
+        orders.value = [];
+      }
 
       applyFilters();
     } catch (e) {
