@@ -3,11 +3,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../data/models/product_model.dart';
+import '../../controllers/auth_controller.dart';
 import '../../controllers/product_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../widgets/app_kits_collection.dart';
 import '../../widgets/customer_bottom_nar_bar.dart';
 import '../../widgets/order_via_telegram_sheet.dart';
+import '../auth/customer_welcome_screen.dart';
 import '../orders/create_order_screen.dart';
 
 /// The full product catalog, customer-facing only. No add/edit/delete
@@ -282,7 +284,15 @@ class _OrderableProductCard extends StatelessWidget {
                   width: double.infinity,
                   height: 34,
                   child: FilledButton.icon(
-                    onPressed: inStock ? () => OrderViaTelegramSheet.show(context, product) : null,
+                    onPressed: !inStock ? null : () {
+                      Get.back();
+                      final auth = Get.find<AuthController>();
+                      if (!auth.isLoggedIn.value) {
+                        Get.to(() => const CustomerWelcomeScreen());
+                        return;
+                      }
+                      Get.to(() => CreateOrderScreen(initialProduct: product));
+                    },
                     style: FilledButton.styleFrom(
                       backgroundColor: scheme.primary,
                       disabledBackgroundColor: scheme.surfaceContainerHighest,

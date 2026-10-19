@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/dashboard_controller.dart';
-import '../controllers/notification_controller.dart';
 import '../../app/routes/app_routes.dart';
+import '../controllers/order_controller.dart';
 
 /// Reduced bottom navigation bar with 5 items for better UX.
 /// Items: Dashboard, Products, Orders, Islamic, Settings
@@ -18,11 +18,12 @@ class BottomNavBar extends StatelessWidget {
     final dashboardController = Get.find<DashboardController>();
 
     return Obx(() {
-      final hasUnread = Get.find<NotificationController>().hasUnread;
+      final hasUnread = Get.find<OrderController>().hasUnreadForAdmin;
 
       final items = <_NavItem>[
         _NavItem(Icons.dashboard_rounded, 'dashboard', '/dashboard'),
         _NavItem(Icons.inventory_2_rounded, 'products', '/products'),
+        _NavItem(Icons.reorder, 'orders', '/orders'),
         _NavItem(Icons.add, 'media', AppRoutes.createPostScreen),
         _NavItem(Icons.mosque_rounded, 'islamic', AppRoutes.islamicHub),
         _NavItem(Icons.settings_rounded, 'settings', '/settings'),
@@ -48,7 +49,7 @@ class BottomNavBar extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(3),
                     decoration: const BoxDecoration(
-                      color: Colors.red,
+                      color: Colors.transparent,
                       shape: BoxShape.circle,
                     ),
                     constraints: const BoxConstraints(
@@ -71,7 +72,7 @@ class BottomNavBar extends StatelessWidget {
           );
         }).toList(),
         onTap: (index) {
-          if (index == 3) {
+          if (index == 4) {
             // Islamic features now live on their own dedicated screen.
             Get.toNamed(AppRoutes.islamicHub);
           } else {

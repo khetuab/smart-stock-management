@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/models/product_model.dart';
+import '../controllers/auth_controller.dart';
 import '../controllers/dashboard_controller.dart';
+import '../views/auth/customer_welcome_screen.dart';
+import '../views/orders/create_order_screen.dart';
 import 'app_kits_collection.dart';
 import 'order_via_telegram_sheet.dart';
 
@@ -171,8 +174,17 @@ class CustomerProductCard extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: outOfStock ? null : () {
                     Get.back();
-                    OrderViaTelegramSheet.show(context, product);
+                    final auth = Get.find<AuthController>();
+                    if (!auth.isLoggedIn.value) {
+                      Get.to(() => const CustomerWelcomeScreen());
+                      return;
+                    }
+                    Get.to(() => CreateOrderScreen(initialProduct: product));
                   },
+                  // onPressed: outOfStock ? null : () {
+                  //   Get.back();
+                  //   OrderViaTelegramSheet.show(context, product);
+                  // },
                   icon: const Icon(Icons.shopping_bag_rounded),
                   label: Text(outOfStock ? 'Out of stock'.tr : 'Place an Order'.tr),
                   style: FilledButton.styleFrom(

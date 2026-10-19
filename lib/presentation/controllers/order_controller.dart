@@ -23,6 +23,7 @@ class OrderController extends GetxController {
   var selectedOrder = Rxn<Order>();
   var searchQuery = ''.obs;
 
+
   // Filters
   var statusFilter = 'all'.obs;
   final List<String> statusOptions = ['all', 'pending', 'approved', 'rejected', 'completed', 'cancelled'];
@@ -518,6 +519,14 @@ class OrderController extends GetxController {
   }
 
   int get pendingCount => orders.where((o) => o.status == 'pending').length;
+
+  bool get hasUnreadForAdmin {
+    final hasPending = orders.any((o) => o.status == 'pending');
+    final hasUnreadMessage = orders.any(
+          (o) => o.messages.any((m) => !m.isAdmin && !m.seenByAdmin),
+    );
+    return hasPending || hasUnreadMessage;
+  }
 
   Future<void> refresh() => loadOrders();
 }

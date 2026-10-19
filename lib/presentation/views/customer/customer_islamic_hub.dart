@@ -113,7 +113,7 @@ class IslamicHubScreenc extends GetView<IslamicController> {
           ),
         ],
       ),
-      bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 3),
+      bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 4),
     );
   }
 }

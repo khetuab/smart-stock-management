@@ -37,6 +37,7 @@ class AppRoutes {
   static const String orderDetail = '/order-detail';
   static const String createOrder = '/create-order';
   static const String orderChat = '/order-chat';
+  static const String customerOrder = '/customer-order';
 
   // Islamic Features Routes
   static const String quran = '/quran';

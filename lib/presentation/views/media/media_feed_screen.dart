@@ -22,7 +22,7 @@ class MediaFeedScreen extends GetView<MediaController> {
     final auth = Get.find<AuthController>();
 
     return Scaffold(
-      bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 2),
+      bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 3),
       appBar: AppBar(
         centerTitle: false,
         elevation: 0,

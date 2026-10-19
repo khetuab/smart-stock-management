@@ -3,11 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:smart_stock/presentation/views/auth/customer_welcome_screen.dart';
-import 'package:smart_stock/presentation/views/auth/login_screen.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/google_sheets_service.dart';
 import '../../data/services/shared_preferences_service.dart';
+import '../views/auth/customer_welcome_screen.dart';
 
 class AuthController extends GetxController {
   final SharedPreferencesService _prefs = SharedPreferencesService();
@@ -37,11 +36,7 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    checkLoginStatus().then((_) {
-      if (!isLoggedIn.value) {
-        _assignSilentGuest();
-      }
-    });
+    checkLoginStatus();
   }
 
   bool _isConnectionError(dynamic e) {
@@ -58,16 +53,6 @@ class AuthController extends GetxController {
   }
   String _friendlyError(dynamic e, {String fallback = 'Something went wrong. Please try again.'}) {
     return _isConnectionError(e) ? 'Connection error, try again' : fallback;
-  }
-
-  Future<void> _assignSilentGuest() async {
-    final deviceId = 'guest_${DateTime.now().millisecondsSinceEpoch}';
-    await _prefs.saveLoginSession(deviceId);
-    await _prefs.saveRole('customer');
-    await _prefs.saveDeviceRole('customer');
-    username.value = deviceId;
-    role.value = 'customer';
-    isLoggedIn.value = true;
   }
 
   // Check login status & restore persistent session
@@ -228,11 +213,19 @@ class AuthController extends GetxController {
 
       final data = await _sheets.getSheetDataWithHeaders('Users');
       final usernames = List<String>.from((data['Username'] ?? []).map((e) => e.toString()));
+      final existingPhones = List<String>.from((data['Phone'] ?? []).map((e) => e.toString()));
 
-      // Duplicate Username Guard
+// Duplicate Username Guard
       final alreadyTaken = usernames.any((u) => u.trim().toLowerCase() == trimmedUsername.toLowerCase());
       if (alreadyTaken) {
         errorMessage.value = 'That username is already taken. Please choose another.';
+        return;
+      }
+
+// Duplicate Phone Guard — stops the same customer creating several accounts
+      final phoneTaken = existingPhones.any((p) => p.trim() == trimmedPhone);
+      if (phoneTaken) {
+        errorMessage.value = 'An account with this phone number already exists. Please log in instead.';
         return;
       }
 
@@ -335,8 +328,9 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Guest Customer Logout -> routes to `/role-selection`
-  Future<void> logoutGuest() async {
+  /// Customer Logout -> routes to the welcome screen (Log In / Create
+  /// Account), since there's no fallback guest identity anymore.
+  Future<void> logoutCustomer() async {
     try {
       await _prefs.clearLoginSession();
       isLoggedIn.value = false;
@@ -344,13 +338,27 @@ class AuthController extends GetxController {
       phone.value = '';
       role.value = 'customer';
 
-      await _assignSilentGuest(); // <-- generate a fresh guest session immediately
-
-      Get.offAll(() => LoginScreen());
+      Get.offAll(() => const CustomerWelcomeScreen());
     } catch (e) {
-      print('Error ending guest session: $e');
+      print('Error logging out: $e');
     }
   }
+  // /// Guest Customer Logout -> routes to `/role-selection`
+  // Future<void> logoutGuest() async {
+  //   try {
+  //     await _prefs.clearLoginSession();
+  //     isLoggedIn.value = false;
+  //     username.value = '';
+  //     phone.value = '';
+  //     role.value = 'customer';
+  //
+  //     await _assignSilentGuest(); // <-- generate a fresh guest session immediately
+  //
+  //     Get.offAll(() => LoginScreen());
+  //   } catch (e) {
+  //     print('Error ending guest session: $e');
+  //   }
+  // }
 
   /// Updates the Phone column of the logged-in user's row in the Users
   /// sheet — this is the actual persistence Edit Profile was missing.

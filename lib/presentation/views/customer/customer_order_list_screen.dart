@@ -182,7 +182,7 @@ class CustomerOrderListScreen extends GetView<OrderController> {
             ],
           ),
         ),
-        bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 1),
+        bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 2),
       ),
     );
   }

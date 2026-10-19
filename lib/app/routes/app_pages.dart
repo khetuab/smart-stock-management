@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:smart_stock/presentation/controllers/quran_mushaf_controller.dart';
 import 'package:smart_stock/presentation/controllers/user_management_controller.dart';
+import 'package:smart_stock/presentation/views/customer/customer_order_list_screen.dart';
 import 'package:smart_stock/presentation/views/mushaf/quran_mushaf_screen.dart';
 import 'package:smart_stock/presentation/views/settings/user_management_screen.dart';
 import 'package:smart_stock/presentation/views/setup/setup_wizard_screen.dart';
@@ -419,6 +420,16 @@ class AppPages {
 GetPage(
       name: AppRoutes.orderChat,
       page: () => const OrderChatScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => OrderController());
+      }),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+
+GetPage(
+      name: AppRoutes.customerOrder,
+      page: () => const CustomerOrderListScreen(),
       binding: BindingsBuilder(() {
         Get.lazyPut(() => OrderController());
       }),

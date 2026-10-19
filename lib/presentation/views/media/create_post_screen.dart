@@ -23,7 +23,7 @@ class CreatePostScreen extends GetView<MediaController> {
     final selectedProduct = Rxn<Product>();
 
     return Scaffold(
-      bottomNavigationBar: BottomNavBar(currentIndex: 2,),
+      bottomNavigationBar: BottomNavBar(currentIndex: 3,),
       appBar: AppBar(
         title: Text('New Post'.tr),
         backgroundColor: scheme.primary,

@@ -22,6 +22,7 @@ class CustomerBottomNavBar extends StatelessWidget {
       final items = <_NavItem>[
         _NavItem(Icons.storefront_rounded, 'browseShop', AppRoutes.customerHome),
         _NavItem(Icons.shopping_bag_outlined, 'products', AppRoutes.allProducts),
+        _NavItem(Icons.reorder, 'orders', AppRoutes.customerOrder),
         _NavItem(Icons.play_arrow_rounded, 'media', AppRoutes.mediaFeed),
         _NavItem(Icons.mosque_rounded, 'islamic', AppRoutes.islamicHubc),
         _NavItem(Icons.settings_rounded, 'settings', AppRoutes.customerSettings),

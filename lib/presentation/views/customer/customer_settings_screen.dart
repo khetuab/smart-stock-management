@@ -5,6 +5,7 @@ import '../../controllers/dashboard_controller.dart';
 import '../../controllers/theme_controller.dart';
 import '../../widgets/app_kits_collection.dart';
 import '../../widgets/customer_bottom_nar_bar.dart';
+import '../auth/customer_welcome_screen.dart';
 
 /// Settings screen scoped to what a customer actually needs: their own
 /// profile, personal appearance/language preferences, a read-only
@@ -28,7 +29,7 @@ class CustomerSettingsScreen extends StatelessWidget {
     final themeController = Get.find<ThemeController>();
 
     return Scaffold(
-      bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 4),
+      bottomNavigationBar: const CustomerBottomNavBar(currentIndex: 5),
       body: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         slivers: [
@@ -134,7 +135,7 @@ class CustomerSettingsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                auth.username.value.isEmpty ? 'Guest'.tr : auth.username.value,
+                                auth.isLoggedIn.value ? auth.username.value : 'Not logged in'.tr,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -252,16 +253,24 @@ class CustomerSettingsScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _SectionHeader(title: 'Session'.tr, icon: Icons.logout_rounded, color: Colors.red),
                 const SizedBox(height: 10),
-                SectionCard(
+                Obx(() => SectionCard(
                   padding: EdgeInsets.zero,
-                  child: _SettingTile(
+                  child: auth.isLoggedIn.value
+                      ? _SettingTile(
                     icon: Icons.logout_rounded,
                     iconColor: Colors.red,
-                    title: 'End Session'.tr,
+                    title: 'Log Out'.tr,
                     hideChevron: true,
                     onTap: () => _confirmEndSession(context, auth),
+                  )
+                      : _SettingTile(
+                    icon: Icons.login_rounded,
+                    iconColor: scheme.primary,
+                    title: 'Log In / Create Account'.tr,
+                    hideChevron: true,
+                    onTap: () => Get.to(() => const CustomerWelcomeScreen()),
                   ),
-                ),
+                )),
 
 
               ]),
@@ -340,16 +349,16 @@ class CustomerSettingsScreen extends StatelessWidget {
   void _confirmEndSession(BuildContext context, AuthController auth) {
     Get.dialog(
       AlertDialog(
-        title: Text('End Session'.tr),
+        title: Text('Log Out'.tr),
         content: Text("You'll need to log in again to place new orders.".tr),
         actions: [
           TextButton(onPressed: () => Get.back(), child: Text('Cancel'.tr)),
           FilledButton(
             onPressed: () {
               Get.back();
-              auth.logoutGuest();
+              auth.logoutCustomer();
             },
-            child: Text('End Session'.tr),
+            child: Text('Log Out'.tr),
           ),
         ],
       ),
