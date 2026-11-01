@@ -58,7 +58,7 @@
         </intent>
     </queries>
     <application
-        android:label="Sadat Mejlis"
+        android:label="Ethio Sadat Mejlis"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
