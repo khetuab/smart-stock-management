@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../data/services/shared_preferences_service.dart';
+import '../data/services/shared_preferences_service.dart';
 
 /// Central controller for the app's active language. Mirrors
 /// ThemeController's `setSeedColor(persist:)` pattern: switching language
@@ -15,6 +15,7 @@ class LocaleController extends GetxController {
     'English': Locale('en', 'US'),
     'Amharic': Locale('am', 'ET'),
     'Arabic': Locale('ar', 'SA'),
+    'Oromo': Locale('om', 'ET'),
   };
 
   static LocaleController get to {

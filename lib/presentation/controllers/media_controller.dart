@@ -28,7 +28,7 @@ class MediaController extends GetxController {
 
   static const List<String> _headers = [
     'id', 'type', 'mediaUrl', 'thumbnailUrl', 'caption',
-    'productId', 'productName', 'postedBy', 'createdAt',
+    'productId', 'productName', 'postedBy', 'createdAt', 'platform',
   ];
 
   static MediaController get to {
@@ -113,9 +113,11 @@ class MediaController extends GetxController {
     final productNames = col('productName');
     final postedBys = col('postedBy');
     final createdAts = col('createdAt');
+    final platforms = col('platform');
 
     for (int i = 0; i < ids.length; i++) {
       if (at(ids, i).isEmpty) continue;
+      final platform = at(platforms, i);
       list.add(MediaPost(
         id: at(ids, i),
         type: at(types, i).isEmpty ? 'photo' : at(types, i),
@@ -126,6 +128,9 @@ class MediaController extends GetxController {
         productName: at(productNames, i),
         postedBy: at(postedBys, i),
         createdAt: at(createdAts, i),
+        platform: platform.isEmpty || !MediaPost.knownPlatforms.contains(platform)
+            ? 'shop'
+            : platform,
       ));
     }
     return list;
@@ -133,13 +138,14 @@ class MediaController extends GetxController {
 
   List<dynamic> _rowFor(MediaPost p) => [
     p.id, p.type, p.mediaUrl, p.thumbnailUrl, p.caption,
-    p.productId, p.productName, p.postedBy, p.createdAt,
+    p.productId, p.productName, p.postedBy, p.createdAt, p.platform,
   ];
 
   Future<void> createPhotoPost({
     required String caption,
     String? productId,
     String? productName,
+    String platform = 'shop',
   }) async {
     if (!isAdmin) return;
     try {
@@ -154,6 +160,7 @@ class MediaController extends GetxController {
         caption: caption,
         productId: productId,
         productName: productName,
+        platform: platform,
       );
     } catch (e) {
       Get.snackbar('Error', 'Failed to create post: $e', colorText: Colors.red, snackPosition: SnackPosition.BOTTOM);
@@ -166,6 +173,7 @@ class MediaController extends GetxController {
     required String caption,
     String? productId,
     String? productName,
+    String platform = 'shop',
   }) async {
     if (!isAdmin) return;
     try {
@@ -187,6 +195,7 @@ class MediaController extends GetxController {
         caption: caption,
         productId: productId,
         productName: productName,
+        platform: platform,
       );
     } catch (e) {
       Get.snackbar('Error', '$e', colorText: Colors.red, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 4));
@@ -203,6 +212,7 @@ class MediaController extends GetxController {
     required String caption,
     String? productId,
     String? productName,
+    String platform = 'shop',
   }) async {
     await _sheets.init();
     await _sheets.createSheetIfNotExists('MediaPosts');
@@ -218,6 +228,7 @@ class MediaController extends GetxController {
       productName: productName ?? '',
       postedBy: _auth.username.value,
       createdAt: DateTime.now().toIso8601String(),
+      platform: platform,
     );
 
     await _sheets.appendToSheet(sheetName: 'MediaPosts', rowData: _rowFor(post));
@@ -279,4 +290,10 @@ class MediaController extends GetxController {
   }
 
   Future<void> refresh() => loadPosts();
+
+  /// Posts belonging to one platform tab ('shop' = the store's own feed).
+  List<MediaPost> postsForPlatform(String platform) {
+    if (platform == 'shop') return posts.toList();
+    return posts.where((p) => p.platform == platform).toList();
+  }
 }

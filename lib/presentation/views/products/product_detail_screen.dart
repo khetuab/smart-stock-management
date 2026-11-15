@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../app/themes/app_theme.dart';
 import '../../../data/models/product_model.dart';
 import '../../controllers/product_controller.dart';
 import '../../controllers/dashboard_controller.dart';
@@ -57,24 +58,65 @@ class ProductDetailScreen extends GetView<ProductController> {
 
     final isLowStock = productData.quantity <= productData.minQuantity;
 
+    return ProductPhotoGallery(product: productData);
+  }
+}
+
+/// ─────────────────────────────────────────────────────────────────────────
+///  Product detail with a swipeable photo gallery:
+///  • PageView carousel over ALL product photos (pinch-zoom on tap).
+///  • Dot indicators + thumbnail strip; tap a thumb to jump.
+///  • Photos live in the single `image` cell, pipe-separated — the legacy
+///    single photo renders exactly as before.
+///  The original admin info/actions UI becomes the gallery's bottom sheet
+///  trigger, keeping every existing business action reachable.
+/// ─────────────────────────────────────────────────────────────────────────
+class ProductPhotoGallery extends StatefulWidget {
+  final Product product;
+  const ProductPhotoGallery({super.key, required this.product});
+
+  @override
+  State<ProductPhotoGallery> createState() => _ProductPhotoGalleryState();
+}
+
+class _ProductPhotoGalleryState extends State<ProductPhotoGallery> {
+  final PageController _pageController = PageController();
+  int _page = 0;
+
+  List<String> get _photos {
+    final imgs = widget.product.images;
+    return imgs.isEmpty ? const <String>[] : imgs;
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dashboardController = Get.find<DashboardController>();
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final product = widget.product;
+    final isLowStock = product.quantity <= product.minQuantity;
+    final photos = _photos;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(productData.name),
-        backgroundColor: Color(
-          int.parse(dashboardController.themeColor.value.substring(1, 7), radix: 16) + 0xFF000000,
-        ),
-        foregroundColor: Colors.white,
+        title: Text(product.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              controller.editProduct(productData);
+              Get.find<ProductController>().editProduct(product);
               Get.toNamed('/add-product');
             },
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => controller.deleteProduct(productData),
+            onPressed: () => Get.find<ProductController>().deleteProduct(product),
           ),
         ],
       ),
@@ -83,34 +125,138 @@ class ProductDetailScreen extends GetView<ProductController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image
-            Container(
-              width: double.infinity,
-              height: 250,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-                image: productData.image.isNotEmpty
-                    ? DecorationImage(
-                  image: NetworkImage(productData.image),
-                  fit: BoxFit.cover,
-                )
-                    : null,
-              ),
-              child: productData.image.isEmpty
-                  ? Icon(
-                Icons.inventory_2,
-                size: 80,
-                color: Colors.grey.shade400,
-              )
-                  : null,
+            // ── Photo carousel ──
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: photos.isEmpty
+                      ? Container(
+                          height: 280,
+                          width: double.infinity,
+                          color: isDark
+                              ? scheme.surfaceContainerHigh
+                              : scheme.surfaceContainerHighest.withOpacity(0.5),
+                          child: Icon(
+                            Icons.inventory_2,
+                            size: 80,
+                            color: scheme.onSurfaceVariant.withOpacity(0.4),
+                          ),
+                        )
+                      : SizedBox(
+                          height: 300,
+                          child: PageView.builder(
+                            controller: _pageController,
+                            itemCount: photos.length,
+                            onPageChanged: (i) => setState(() => _page = i),
+                            itemBuilder: (context, i) => GestureDetector(
+                              onTap: () => _openZoomViewer(context, photos, i),
+                              child: Image.network(
+                                photos[i],
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(Icons.broken_image_rounded, size: 60),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+                // Page counter badge
+                if (photos.length > 1)
+                  Positioned(
+                    right: 12,
+                    top: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        gradient: MejlisPalette.goldGradient,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_page + 1} / ${photos.length}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF2A2104),
+                        ),
+                      ),
+                    ),
+                  ),
+                // Zoom hint
+                if (photos.isNotEmpty)
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.zoom_in_rounded,
+                        size: 17,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
             ),
+
+            // ── Thumbnail strip ──
+            if (photos.length > 1) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 64,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: photos.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final selected = i == _page;
+                    return GestureDetector(
+                      onTap: () {
+                        _pageController.animateToPage(
+                          i,
+                          duration: const Duration(milliseconds: 320),
+                          curve: Curves.easeOutCubic,
+                        );
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 64,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selected ? MejlisPalette.gold : Colors.transparent,
+                            width: 2.2,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            photos[i],
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                Container(color: Colors.grey.shade200),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
 
             const SizedBox(height: 24),
 
             // Product Name
             Text(
-              productData.name,
+              product.name,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -118,6 +264,93 @@ class ProductDetailScreen extends GetView<ProductController> {
             ),
 
             const SizedBox(height: 8),
+            _originalInfoSection(context, product, dashboardController, isLowStock),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Opens the full-screen pinch-zoom photo viewer.
+  void _openZoomViewer(BuildContext context, List<String> photos, int initial) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        transitionDuration: const Duration(milliseconds: 260),
+        pageBuilder: (_, animation, __) {
+          return FadeTransition(
+            opacity: animation,
+            child: _ZoomablePhotoViewer(photos: photos, initialIndex: initial),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Full-screen InteractiveViewer gallery — pinch & double-tap zoom.
+class _ZoomablePhotoViewer extends StatefulWidget {
+  final List<String> photos;
+  final int initialIndex;
+  const _ZoomablePhotoViewer({required this.photos, required this.initialIndex});
+
+  @override
+  State<_ZoomablePhotoViewer> createState() => _ZoomablePhotoViewerState();
+}
+
+class _ZoomablePhotoViewerState extends State<_ZoomablePhotoViewer> {
+  late final PageController _controller = PageController(initialPage: widget.initialIndex);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black.withOpacity(0.94),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+      body: PageView.builder(
+        controller: _controller,
+        itemCount: widget.photos.length,
+        itemBuilder: (context, i) => Center(
+          child: InteractiveViewer(
+            maxScale: 5,
+            minScale: 0.5,
+            child: Image.network(
+              widget.photos[i],
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.broken_image_rounded,
+                size: 70,
+                color: Colors.white38,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The original admin info & quick-actions block, preserved verbatim in
+/// structure so no business behavior changes.
+extension on _ProductPhotoGalleryState {
+  Widget _originalInfoSection(
+    BuildContext context,
+    Product productData,
+    DashboardController dashboardController,
+    bool isLowStock,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
 
             // Category
             Container(
@@ -334,8 +567,6 @@ class ProductDetailScreen extends GetView<ProductController> {
               ],
             ),
           ],
-        ),
-      ),
     );
   }
 

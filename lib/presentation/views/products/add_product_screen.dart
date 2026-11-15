@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../app/themes/app_theme.dart';
 import '../../../data/models/category_model.dart';
 import '../../../data/services/cloudinary_service.dart';
 import '../../controllers/product_controller.dart';
@@ -110,6 +111,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 color: scheme.onSurface,
               ),
             ),
+            const SizedBox(height: 6),
+            Text(
+              'photosCanBeAdded'.tr,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 16),
             ListTile(
               leading: CircleAvatar(
@@ -131,7 +140,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   isPublic: true,
                 );
                 if (imageUrl != null) {
-                  controller.setImage(imageUrl);
+                  controller.addProductImage(imageUrl);
                 }
               },
             ),
@@ -156,7 +165,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   isPublic: true,
                 );
                 if (imageUrl != null) {
-                  controller.setImage(imageUrl);
+                  controller.addProductImage(imageUrl);
                 }
               },
             ),
@@ -201,89 +210,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Image Upload Box ---
-              GestureDetector(
-                onTap: () => _showImagePickerOptions(context, scheme),
-                child: Container(
-                  height: 180,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? scheme.surfaceContainerHigh
-                        : scheme.surfaceContainerHighest.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(24),
-                    image: controller.productImage.value.isNotEmpty
-                        ? DecorationImage(
-                      image: NetworkImage(controller.productImage.value),
-                      fit: BoxFit.cover,
-                    )
-                        : null,
-                  ),
-                  child: controller.productImage.value.isEmpty
-                      ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: scheme.primary.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.add_a_photo_outlined,
-                          size: 30,
-                          color: scheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'tapToUploadPhoto'.tr,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  )
-                      : Stack(
-                    children: [
-                      Positioned(
-                        right: 12,
-                        bottom: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.65),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.edit_rounded,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'change'.tr,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              // --- Multi-Photo Gallery ---
+              _MultiPhotoGallery(
+                controller: controller,
+                isDark: isDark,
+                scheme: scheme,
+                onAddPhoto: () => _showImagePickerOptions(context, scheme),
               ),
 
               const SizedBox(height: 24),
@@ -705,6 +637,259 @@ class _AddProductScreenState extends State<AddProductScreen> {
             child: Text('delete'.tr),
           ),
         ],
+      ),
+    );
+  }
+}
+/// ─────────────────────────────────────────────────────────────────────────
+///  Multi-photo gallery for the product form.
+///  • Horizontal strip of uploaded photos (first = cover, tagged "Main").
+///  • "+ Add Photo" tile opens the camera/gallery picker (multiple adds).
+///  • Per-photo: remove (x) and "make main" (star) controls.
+///  • Photos are joined with '|' into the existing single `image` cell —
+///    zero changes to the Products sheet schema.
+/// ─────────────────────────────────────────────────────────────────────────
+class _MultiPhotoGallery extends StatelessWidget {
+  final ProductController controller;
+  final bool isDark;
+  final ColorScheme scheme;
+  final VoidCallback onAddPhoto;
+
+  const _MultiPhotoGallery({
+    required this.controller,
+    required this.isDark,
+    required this.scheme,
+    required this.onAddPhoto,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.photo_library_rounded, size: 16, color: MejlisPalette.goldDark),
+            const SizedBox(width: 6),
+            Text(
+              'productPhotos'.tr,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 150,
+          child: Obx(() {
+            final images = controller.productImages;
+            final showAddTile = images.length < 10;
+
+            return ListView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              children: [
+                for (int i = 0; i < images.length; i++)
+                  _PhotoThumb(
+                    url: images[i],
+                    isMain: i == 0,
+                    onRemove: () => controller.removeProductImage(i),
+                    onSetMain: i == 0 ? null : () => controller.setMainProductImage(i),
+                  ),
+                if (showAddTile)
+                  _AddPhotoTile(
+                    isDark: isDark,
+                    scheme: scheme,
+                    onTap: onAddPhoto,
+                    count: images.length,
+                  ),
+              ],
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}
+
+class _PhotoThumb extends StatelessWidget {
+  final String url;
+  final bool isMain;
+  final VoidCallback onRemove;
+  final VoidCallback? onSetMain;
+
+  const _PhotoThumb({
+    required this.url,
+    required this.isMain,
+    required this.onRemove,
+    this.onSetMain,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 130,
+      margin: const EdgeInsets.only(right: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.broken_image_rounded),
+              ),
+            ),
+            // Gradient + main tag
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                height: 42,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.55)],
+                  ),
+                ),
+              ),
+            ),
+            if (isMain)
+              Positioned(
+                left: 6,
+                bottom: 6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    gradient: MejlisPalette.goldGradient,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'mainPhoto'.tr,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF2A2104),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Positioned(
+                left: 6,
+                bottom: 6,
+                child: GestureDetector(
+                  onTap: onSetMain,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star_rounded, size: 12, color: MejlisPalette.goldLight),
+                        const SizedBox(width: 3),
+                        Text(
+                          'makeMain'.tr,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            // Remove button
+            Positioned(
+              right: 4,
+              top: 4,
+              child: GestureDetector(
+                onTap: onRemove,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddPhotoTile extends StatelessWidget {
+  final bool isDark;
+  final ColorScheme scheme;
+  final VoidCallback onTap;
+  final int count;
+
+  const _AddPhotoTile({
+    required this.isDark,
+    required this.scheme,
+    required this.onTap,
+    required this.count,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 110,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: MejlisPalette.gold.withOpacity(0.6),
+            width: 1.6,
+          ),
+          color: isDark
+              ? scheme.surfaceContainerHigh
+              : scheme.surfaceContainerHighest.withOpacity(0.4),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: MejlisPalette.goldGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add_a_photo_outlined,
+                size: 22,
+                color: Color(0xFF2A2104),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'addPhoto'.tr,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
+            ),
+            Text(
+              '$count/10',
+              style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../controllers/dashboard_controller.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/dashboard_header.dart';
+import '../../widgets/location_showcase_widget.dart';
 
 class DashboardScreen extends GetView<DashboardController> {
   const DashboardScreen({super.key});
@@ -152,6 +153,15 @@ class DashboardScreen extends GetView<DashboardController> {
                   ),
                 ),
               ),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 8),
+              ),
+
+// ── Ethiopia locations map ──
+              const SliverToBoxAdapter(
+                child: LocationShowcaseWidget(),
+              ),
+
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),

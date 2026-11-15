@@ -125,7 +125,7 @@ class SaleScreen extends GetView<SaleController> {
                               Stack(
                                 children: [
                                   ProductImageBox(
-                                    imageUrl: product.image,
+                                    imageUrl: product.coverImage,
                                     height: 86,
                                     borderRadius: 14,
                                     placeholderSize: 28,

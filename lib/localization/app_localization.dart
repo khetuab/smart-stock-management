@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:smart_stock/localization/translations/am_et.dart';
 import 'package:smart_stock/localization/translations/ar_sa.dart';
 import 'package:smart_stock/localization/translations/en_us.dart';
+import 'package:smart_stock/localization/translations/om_et.dart';
 
 /// Registers all supported language maps with GetX. Passed to
 /// `GetMaterialApp(translations: AppLocalization())` in main.dart.
@@ -13,5 +14,6 @@ class AppLocalization extends Translations {
     'en_US': enUS,
     'am_ET': amET,
     'ar_SA': arSA,
+    'om_ET': omET,
   };
 }

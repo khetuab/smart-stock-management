@@ -55,4 +55,16 @@ class AppRoutes {
   static const String customerWelcome = '/customer-welcome';
   static const String customerHome = '/customer-home';
   static const String customerSettings = '/customer-settings';
+
+  // ─────────────────────────────────────────────────────────────────
+  //  MEJLIS v2 — new feature routes
+  // ─────────────────────────────────────────────────────────────────
+  static const String languageSelection = '/language-selection';
+  static const String mediaHub = '/media-hub';
+  static const String contactUs = '/contact-us';
+  static const String contactInbox = '/contact-inbox';
+  static const String adminLocations = '/admin-locations';
+  static const String azkar = '/azkar';
+  static const String salawat = '/salawat';
+  static const String namesOfAllah = '/names-of-allah';
 }

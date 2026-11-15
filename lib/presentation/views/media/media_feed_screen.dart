@@ -76,7 +76,7 @@ class MediaFeedScreen extends GetView<MediaController> {
                   itemCount: controller.posts.length,
                   itemBuilder: (context, index) {
                     final post = controller.posts[index];
-                    return _PostCard(post: post, isAdmin: auth.isAdmin)
+                    return MediaPostCard(post: post, isAdmin: auth.isAdmin)
                         .animate()
                         .fadeIn(delay: (40 * index).ms, duration: 300.ms)
                         .slideY(begin: 0.05, end: 0);
@@ -92,16 +92,18 @@ class MediaFeedScreen extends GetView<MediaController> {
   }
 }
 
-class _PostCard extends StatefulWidget {
+/// Public so the new Media Hub can reuse the exact same photo/video
+/// rendering (including the single-active-video coordination).
+class MediaPostCard extends StatefulWidget {
   final dynamic post;
   final bool isAdmin;
-  const _PostCard({required this.post, required this.isAdmin});
+  const MediaPostCard({super.key, required this.post, required this.isAdmin});
 
   @override
-  State<_PostCard> createState() => _PostCardState();
+  State<MediaPostCard> createState() => _MediaPostCardState();
 }
 
-class _PostCardState extends State<_PostCard> {
+class _MediaPostCardState extends State<MediaPostCard> {
   VideoPlayerController? _videoController;
   bool _initialized = false;
   bool _muted = false;

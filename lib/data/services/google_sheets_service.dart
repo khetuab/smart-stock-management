@@ -4,6 +4,8 @@ import '../../config/app_config.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../../core/utils/error_helper.dart';
+
 class GoogleSheetsService {
   static final GoogleSheetsService _instance = GoogleSheetsService._internal();
   factory GoogleSheetsService() => _instance;
@@ -41,7 +43,7 @@ class GoogleSheetsService {
       );
     } catch (e) {
       print('Error initializing Google Sheets Service: $e');
-      throw Exception('Failed to initialize Google Sheets: $e');
+      throw AppException(ErrorHelper.friendly(e));
     }
   }
 
@@ -106,7 +108,7 @@ class GoogleSheetsService {
       print('Data written to $sheetName successfully');
     } catch (e) {
       print('Error writing to sheet $sheetName: $e');
-      throw Exception('Failed to write to sheet: $e');
+      throw AppException(ErrorHelper.friendly(e));
     }
   }
 
@@ -148,7 +150,7 @@ class GoogleSheetsService {
       print('Data appended to $sheetName successfully');
     } catch (e) {
       print('Error appending to sheet $sheetName: $e');
-      throw Exception('Failed to append to sheet: $e');
+      throw AppException(ErrorHelper.friendly(e));
     }
   }
 
@@ -177,7 +179,7 @@ class GoogleSheetsService {
       print('Cell $cellReference updated successfully');
     } catch (e) {
       print('Error updating cell: $e');
-      throw Exception('Failed to update cell: $e');
+      throw AppException(ErrorHelper.friendly(e));
     }
   }
 

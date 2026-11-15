@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../data/models/order_model.dart';
+import '../../data/models/order_model.dart';
 
 class OrderHeroStat extends StatelessWidget {
   final String label;

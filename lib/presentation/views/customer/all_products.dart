@@ -8,7 +8,10 @@ import '../../controllers/product_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../widgets/app_kits_collection.dart';
 import '../../widgets/customer_bottom_nar_bar.dart';
+import '../../widgets/customer_product_card.dart';
+import '../../widgets/mejlis_kit.dart';
 import '../../widgets/order_via_telegram_sheet.dart';
+import '../../widgets/secret_owner_access.dart';
 import '../auth/customer_welcome_screen.dart';
 import '../orders/create_order_screen.dart';
 
@@ -31,7 +34,38 @@ class CustomerAllProductsScreen extends GetView<ProductController> {
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
             SliverAppBar(
-              expandedHeight: 180,
+              leading: Obx(
+                    () => Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SecretOwnerAccess(
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.4),
+                          width: 1,
+                        ),
+                        image: dashboard.storeLogo.value.isNotEmpty
+                            ? DecorationImage(
+                          image: NetworkImage(dashboard.storeLogo.value),
+                          fit: BoxFit.cover,
+                        )
+                            : null,
+                      ),
+                      child: dashboard.storeLogo.value.isEmpty
+                          ? const Icon(
+                        Icons.storefront_rounded,
+                        color: Colors.white,
+                      )
+                          : null,
+                    ),
+                  ),
+                ),
+              ),
+              expandedHeight: 235,
               floating: false,
               pinned: true,
               elevation: 0,
@@ -39,6 +73,21 @@ class CustomerAllProductsScreen extends GetView<ProductController> {
               surfaceTintColor: scheme.surface,
               backgroundColor: scheme.primary,
               iconTheme: const IconThemeData(color: Colors.white),
+
+              actions: [
+                IconButton(
+                  tooltip: 'contactUs'.tr,
+                  onPressed: () => Get.toNamed(AppRoutes.contactUs),
+                  icon: const Icon(Icons.headset_mic_rounded),
+                ),
+                IconButton(
+                  tooltip: 'settings'.tr,
+                  onPressed: () => Get.toNamed(AppRoutes.customerSettings),
+                  icon: const Icon(Icons.settings_rounded),
+                ),
+                const SizedBox(width: 8),
+              ],
+
               flexibleSpace: FlexibleSpaceBar(
                 centerTitle: false,
                 titlePadding: const EdgeInsets.only(left: 56, bottom: 14),
@@ -48,40 +97,55 @@ class CustomerAllProductsScreen extends GetView<ProductController> {
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
-                    shadows: [Shadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 2))],
+                    shadows: [
+                      Shadow(
+                        color: Colors.black38,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    CustomPaint(
-                      painter: _CatalogHeaderPainter(primaryColor: scheme.primary, secondaryColor: scheme.tertiary, isDark: isDark),
-                    ),
+                    const MejlisHeaderBackground(),
+
+                    // Subtle overlay for readability.
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.black.withOpacity(0.15), Colors.transparent, Colors.black.withOpacity(0.35)],
+                          colors: [
+                            Colors.black.withOpacity(0.10),
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.35),
+                          ],
                           stops: const [0.0, 0.5, 1.0],
                         ),
                       ),
                     ),
+
+                    // Live product count.
                     Positioned(
                       left: 20,
                       right: 20,
                       bottom: 50,
-                      child: Obx(() => Text(
-                        '${controller.filteredProducts.length} ${'items available'.tr}',
-                        style: const TextStyle(color: Colors.white70, fontSize: 12.5),
-                      )),
+                      child: Obx(
+                            () => Text(
+                          '${controller.filteredProducts.length} ${'items available'.tr}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-
             ),
-
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -165,7 +229,6 @@ class CustomerAllProductsScreen extends GetView<ProductController> {
                       return _OrderableProductCard(
                         product: product,
                         formatCurrency: dashboard.formatCurrency,
-                        onOrder: () => Get.to(() => CreateOrderScreen(initialProduct: product)),
                       ).animate().fadeIn(delay: (25 * index).ms, duration: 250.ms);
                     },
                     childCount: products.length,
@@ -183,13 +246,14 @@ class CustomerAllProductsScreen extends GetView<ProductController> {
 class _OrderableProductCard extends StatelessWidget {
   final Product product;
   final String Function(double) formatCurrency;
-  final VoidCallback onOrder;
 
   const _OrderableProductCard({
     required this.product,
     required this.formatCurrency,
-    required this.onOrder,
   });
+
+  void _openDetails(BuildContext context) =>
+      CustomerProductCard.showQuickView(context, product);
 
   @override
   Widget build(BuildContext context) {
@@ -197,121 +261,129 @@ class _OrderableProductCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final inStock = product.quantity > 0;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? scheme.surfaceContainerHigh : scheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.25) : scheme.shadow.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // --- Image ---
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: AspectRatio(
-                  aspectRatio: 1.15,
-                  child: product.image.isNotEmpty
-                      ? Image.network(
-                    product.image,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: scheme.surfaceContainerHighest,
-                      child: Icon(Icons.image_not_supported_outlined, color: scheme.onSurfaceVariant),
-                    ),
-                  )
-                      : Container(
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(Icons.inventory_2_outlined, size: 36, color: scheme.onSurfaceVariant),
-                  ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _openDetails(context),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? scheme.surfaceContainerHigh : scheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withOpacity(0.25)
+                  : scheme.shadow.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // --- Image (swipeable when there are multiple photos) ---
+            ClipRRect(
+              borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+              child: AspectRatio(
+                aspectRatio: 1.15,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ProductImageCarousel(images: product.images),
+                    if (!inStock)
+                      IgnorePointer(
+                        child: Container(
+                          color: Colors.black45,
+                          alignment: Alignment.center,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: scheme.error,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Out of Stock'.tr,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              if (!inStock)
-                Positioned.fill(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                      color: Colors.black45,
-                    ),
-                    alignment: Alignment.center,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(color: scheme.error, borderRadius: BorderRadius.circular(20)),
-                      child: Text(
-                        'Out of Stock'.tr,
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+
+            // --- Info ---
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                        color: scheme.onSurface),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    product.category.isEmpty ? 'General'.tr : product.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        color: scheme.onSurfaceVariant.withOpacity(0.8),
+                        fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    formatCurrency(product.sellingPrice),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: scheme.primary,
+                        letterSpacing: -0.3),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 34,
+                    child: FilledButton.icon(
+                      // Opens the photo gallery first; ordering happens
+                      // from the "Place an Order" button inside the sheet.
+                      onPressed: !inStock ? null : () => _openDetails(context),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: scheme.primary,
+                        disabledBackgroundColor: scheme.surfaceContainerHighest,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: Icon(Icons.shopping_bag_outlined,
+                          size: 15,
+                          color: inStock ? Colors.white : scheme.onSurfaceVariant),
+                      label: Text(
+                        'Order'.tr,
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: inStock ? Colors.white : scheme.onSurfaceVariant),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-
-          // --- Info ---
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: scheme.onSurface),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  product.category.isEmpty ? 'General'.tr : product.category,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 10.5, color: scheme.onSurfaceVariant.withOpacity(0.8), fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  formatCurrency(product.sellingPrice),
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: scheme.primary, letterSpacing: -0.3),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 34,
-                  child: FilledButton.icon(
-                    onPressed: !inStock ? null : () {
-                      Get.back();
-                      final auth = Get.find<AuthController>();
-                      if (!auth.isLoggedIn.value) {
-                        Get.to(() => const CustomerWelcomeScreen());
-                        return;
-                      }
-                      Get.to(() => CreateOrderScreen(initialProduct: product));
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: scheme.primary,
-                      disabledBackgroundColor: scheme.surfaceContainerHighest,
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: Icon(Icons.shopping_bag_outlined, size: 15,
-                        color: inStock ? Colors.white : scheme.onSurfaceVariant),
-                    label: Text(
-                      'Order'.tr,
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700,
-                          color: inStock ? Colors.white : scheme.onSurfaceVariant),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

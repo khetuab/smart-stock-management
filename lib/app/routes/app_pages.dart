@@ -78,6 +78,18 @@ import '../../presentation/views/auth/customer_welcome_screen.dart';
 import '../../presentation/views/customer/customer_home_screen.dart';
 import '../../presentation/views/customer/customer_settings_screen.dart';
 
+// MEJLIS v2 — new screens
+import '../../presentation/views/auth/language_selection_screen.dart';
+import '../../presentation/views/media_hub/media_hub_screen.dart';
+import '../../presentation/views/contact/contact_us_screen.dart';
+import '../../presentation/views/contact/admin_contact_inbox_screen.dart';
+import '../../presentation/views/locations/admin_locations_screen.dart';
+import '../../presentation/views/islamic/azkar_screen.dart';
+import '../../presentation/views/islamic/salawat_screen.dart';
+import '../../presentation/views/islamic/names_of_allah_screen.dart';
+import '../../presentation/controllers/locations_controller.dart';
+import '../../presentation/controllers/contact_controller.dart';
+
 
 class AppPages {
   static const initial = AppRoutes.setup;
@@ -539,6 +551,80 @@ GetPage(
       }),
       customTransition: FadeGetTransition(),
       transitionDuration: const Duration(milliseconds: 300),
+    ),
+
+    // ============================================================
+    // MEJLIS v2 — NEW PAGES (language gate, media hub, contact,
+    // locations, azkar/salawat/names)
+    // ============================================================
+    GetPage(
+      name: AppRoutes.languageSelection,
+      page: () => const LanguageSelectionScreen(),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+    GetPage(
+      name: AppRoutes.mediaHub,
+      page: () => const MediaHubScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => MediaController(), fenix: true);
+        Get.lazyPut(() => SocialLinksController(), fenix: true);
+      }),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+    GetPage(
+      name: AppRoutes.contactUs,
+      page: () => const ContactUsScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => ContactController(), fenix: true);
+        Get.lazyPut(() => LocationsController(), fenix: true);
+        Get.lazyPut(() => SocialLinksController(), fenix: true);
+      }),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+    GetPage(
+      name: AppRoutes.contactInbox,
+      page: () => const AdminContactInboxScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => ContactController(), fenix: true);
+      }),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+    GetPage(
+      name: AppRoutes.adminLocations,
+      page: () => const AdminLocationsScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => LocationsController(), fenix: true);
+      }),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+    GetPage(
+      name: AppRoutes.azkar,
+      page: () => const AzkarScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => IslamicController());
+      }),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+    GetPage(
+      name: AppRoutes.salawat,
+      page: () => const SalawatScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => IslamicController());
+      }),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
+    ),
+    GetPage(
+      name: AppRoutes.namesOfAllah,
+      page: () => const NamesOfAllahScreen(),
+      customTransition: FadeScaleGetTransition(),
+      transitionDuration: const Duration(milliseconds: 350),
     ),
   ];
 }

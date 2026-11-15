@@ -202,6 +202,22 @@ class SettingsScreen extends GetView<SettingsController> {
                           subtitle: 'Social Media Links'.tr,
                           onTap: () => Get.toNamed(AppRoutes.socialLinks),
                         ),
+                        _buildSettingTile(
+                          context,
+                          icon: Icons.location_on_rounded,
+                          iconColor: const Color(0xFF0B6E4F),
+                          title: 'storeLocations'.tr,
+                          subtitle: 'storeLocationsSubtitle'.tr,
+                          onTap: () => Get.toNamed(AppRoutes.adminLocations),
+                        ),
+                        _buildSettingTile(
+                          context,
+                          icon: Icons.inbox_rounded,
+                          iconColor: const Color(0xFFC9A227),
+                          title: 'contactInbox'.tr,
+                          subtitle: 'inboxEmpty'.tr,
+                          onTap: () => Get.toNamed(AppRoutes.contactInbox),
+                        ),
                       ],
                     ).animate().fadeIn(delay: 100.ms, duration: 500.ms),
 
@@ -819,7 +835,7 @@ class SettingsScreen extends GetView<SettingsController> {
   }
 
   void _showLanguagePicker(BuildContext context) {
-    final languages = ['English', 'Amharic', 'Arabic'];
+    final languages = ['English', 'Amharic', 'Arabic', 'Oromo'];
 
     Get.bottomSheet(
       Container(

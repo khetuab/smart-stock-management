@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/order_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../widgets/app_kits_collection.dart';
+import '../../widgets/mejlis_kit.dart';
 import '../../widgets/order_list_shared.dart';
 import '../../widgets/customer_bottom_nar_bar.dart';
+import '../../widgets/secret_owner_access.dart';
 import '../auth/customer_welcome_screen.dart';
 import '../orders/create_order_screen.dart';
 import '../orders/order_detail_screen.dart';
@@ -81,54 +84,136 @@ class CustomerOrderListScreen extends GetView<OrderController> {
             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             slivers: [
               SliverAppBar(
-                expandedHeight: 190,
+                leading: Obx(
+                      () => Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SecretOwnerAccess(
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.4),
+                            width: 1,
+                          ),
+                          image: dashboard.storeLogo.value.isNotEmpty
+                              ? DecorationImage(
+                            image: NetworkImage(dashboard.storeLogo.value),
+                            fit: BoxFit.cover,
+                          )
+                              : null,
+                        ),
+                        child: dashboard.storeLogo.value.isEmpty
+                            ? const Icon(
+                          Icons.storefront_rounded,
+                          color: Colors.white,
+                        )
+                            : null,
+                      ),
+                    ),
+                  ),
+                ),
+                expandedHeight: 235,
                 floating: false,
                 pinned: true,
-                snap: false,
                 elevation: 0,
                 scrolledUnderElevation: 4,
                 surfaceTintColor: scheme.surface,
                 backgroundColor: scheme.primary,
                 iconTheme: const IconThemeData(color: Colors.white),
-                //leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), tooltip: 'Back'.tr, onPressed: goBack),
+
                 actions: [
-                  IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: controller.refresh),
+                  IconButton(
+                    tooltip: 'Refresh'.tr,
+                    icon: const Icon(Icons.refresh_rounded),
+                    onPressed: controller.refresh,
+                  ),
+                  IconButton(
+                    tooltip: 'contactUs'.tr,
+                    onPressed: () => Get.toNamed(AppRoutes.contactUs),
+                    icon: const Icon(Icons.headset_mic_rounded),
+                  ),
+                  IconButton(
+                    tooltip: 'settings'.tr,
+                    onPressed: () => Get.toNamed(AppRoutes.customerSettings),
+                    icon: const Icon(Icons.settings_rounded),
+                  ),
                   const SizedBox(width: 8),
                 ],
+
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: false,
                   titlePadding: const EdgeInsets.only(left: 56, bottom: 14),
                   title: Text(
                     'My Orders'.tr,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17,
-                        shadows: [Shadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 2))]),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black38,
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
                   ),
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      CustomPaint(painter: OrdersHeaderPainter(primaryColor: scheme.primary, secondaryColor: scheme.tertiary, isDark: isDark)),
+                      const MejlisHeaderBackground(),
+
+                      // Subtle dark overlay for title readability.
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                            colors: [Colors.black.withOpacity(0.15), Colors.transparent, Colors.black.withOpacity(0.35)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.10),
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.35),
+                            ],
                             stops: const [0.0, 0.5, 1.0],
                           ),
                         ),
                       ),
+
+                      // Order statistics.
                       Positioned(
-                        left: 20, right: 20, bottom: 52,
+                        left: 20,
+                        right: 20,
+                        bottom: 52,
                         child: Obx(() {
                           final total = controller.orders.length;
                           final pending = controller.pendingCount;
+
                           return Row(
                             children: [
-                              Expanded(child: OrderHeroStat(label: 'Placed'.tr, value: '$total', icon: Icons.receipt_long_rounded)),
-                              Container(width: 1, height: 34, color: Colors.white.withOpacity(0.3), margin: const EdgeInsets.symmetric(horizontal: 14)),
                               Expanded(
                                 child: OrderHeroStat(
-                                  label: 'Awaiting Reply'.tr, value: '$pending', icon: Icons.hourglass_top_rounded,
-                                  valueColor: pending > 0 ? const Color(0xFFFFD9B3) : Colors.white,
+                                  label: 'Placed'.tr,
+                                  value: '$total',
+                                  icon: Icons.receipt_long_rounded,
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 34,
+                                color: Colors.white.withOpacity(0.3),
+                                margin: const EdgeInsets.symmetric(horizontal: 14),
+                              ),
+                              Expanded(
+                                child: OrderHeroStat(
+                                  label: 'Awaiting Reply'.tr,
+                                  value: '$pending',
+                                  icon: Icons.hourglass_top_rounded,
+                                  valueColor: pending > 0
+                                      ? const Color(0xFFFFD9B3)
+                                      : Colors.white,
                                 ),
                               ),
                             ],

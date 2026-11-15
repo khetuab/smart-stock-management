@@ -4,6 +4,7 @@ import '../../controllers/zakat_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../widgets/app_kits_collection.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/mejlis_kit.dart';
 
 class ZakatScreen extends GetView<ZakatController> {
   const ZakatScreen({super.key});
@@ -97,99 +98,7 @@ class ZakatScreen extends GetView<ZakatController> {
                     ),
                   ],
                 ),
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Dynamic Mesh Header Painter with Islamic Geometry
-                    CustomPaint(
-                      painter: _IslamicMeshHeaderPainter(
-                        primaryColor: scheme.primary,
-                        secondaryColor: scheme.tertiary,
-                        isDark: isDark,
-                      ),
-                    ),
-
-                    // Dark Gradient overlay
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.35),
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.4),
-                          ],
-                          stops: const [0.0, 0.5, 1.0],
-                        ),
-                      ),
-                    ),
-
-                    // Crescent Motif Accent
-                    Positioned(
-                      right: -10,
-                      top: 15,
-                      child: Icon(
-                        Icons.nights_stay_rounded,
-                        size: 130,
-                        color: Colors.white.withOpacity(0.08),
-                      ),
-                    ),
-
-                    // Calligraphic Header Details
-                    Positioned(
-                      left: 20,
-                      bottom: 48,
-                      right: 20,
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xFFFBBF24).withOpacity(0.5),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.auto_awesome_rounded,
-                              color: Color(0xFFFBBF24),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'زكاة المال • Purify Your Wealth',
-                                  style: TextStyle(
-                                    color: const Color(0xFFFEF08A).withOpacity(0.9),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                                const Text(
-                                  'Islamic Asset & Nisab Calculator',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                background: const MejlisHeaderBackground(showSkyline: false),
               ),
             ),
 

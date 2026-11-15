@@ -83,8 +83,8 @@ class OrderViaTelegramSheet {
                           child: SizedBox(
                             width: 56,
                             height: 56,
-                            child: product.image.isNotEmpty
-                                ? Image.network(product.image, fit: BoxFit.cover,
+                            child: product.coverImage.isNotEmpty
+                                ? Image.network(product.coverImage, fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Icon(
                                   Icons.inventory_2_outlined,
                                   color: scheme.onSurfaceVariant,
@@ -282,7 +282,7 @@ class OrderViaTelegramSheet {
                             quantity: qty.value,
                             customerPhone: phone.value.trim(),
                             currency: dashboard.currency.value,
-                            imageUrl: product.image,
+                            imageUrl: product.coverImage,
                           );
                           submitting.value = false;
                           if (ok) {

@@ -25,6 +25,44 @@ class Product {
     this.dateAdded = '',
   });
 
+  // ─────────────────────────────────────────────────────────────────
+  //  MULTI-PHOTO SUPPORT
+  //
+  //  The Google Sheets 'image' cell stores ONE or MORE photo URLs
+  //  separated by the '|' pipe character, e.g.
+  //      "https://...img1.jpg|https://...img2.jpg|https://...img3.jpg"
+  //
+  //  This keeps the sheet schema (11 columns) exactly as it was — no new
+  //  columns, no migration, and older app versions keep seeing the first
+  //  (main) photo. Everything below is purely derived from `image`.
+  // ─────────────────────────────────────────────────────────────────
+  static const String imageSeparator = '|';
+
+  static String joinImages(List<String> urls) {
+    return urls
+        .map((u) => u.trim())
+        .where((u) => u.isNotEmpty)
+        .join(imageSeparator);
+  }
+
+  /// All photos of this product; the first one is the main/cover photo.
+  /// Falls back to a single-element list when only the legacy single URL
+  /// exists, and to an empty list when there is no photo at all.
+  List<String> get images {
+    final trimmed = image.trim();
+    if (trimmed.isEmpty) return const [];
+    return trimmed
+        .split(imageSeparator)
+        .map((u) => u.trim())
+        .where((u) => u.isNotEmpty)
+        .toList();
+  }
+
+  /// The cover photo — same as the legacy single-image behavior everywhere.
+  String get coverImage => images.isEmpty ? '' : images.first;
+
+  int get imageCount => images.length;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

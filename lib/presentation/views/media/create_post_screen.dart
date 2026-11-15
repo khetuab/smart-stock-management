@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import '../../../data/models/media_post_model.dart';
 import '../../../data/models/product_model.dart';
 import '../../controllers/media_controller.dart';
 import '../../controllers/product_controller.dart';
@@ -18,9 +19,15 @@ class CreatePostScreen extends GetView<MediaController> {
     final productController = Get.find<ProductController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Optional preset platform passed from the Media Hub tab shortcut.
+    final args = Get.arguments;
+    final presetPlatform =
+        (args is Map && args['platform'] is String) ? args['platform'] as String : 'shop';
+
     final captionController = TextEditingController();
     final selectedType = 'photo'.obs; // 'photo' or 'video'
     final selectedProduct = Rxn<Product>();
+    final selectedPlatform = presetPlatform.obs;
 
     return Scaffold(
       bottomNavigationBar: BottomNavBar(currentIndex: 3,),
@@ -115,6 +122,45 @@ class CreatePostScreen extends GetView<MediaController> {
               ),
 
               const SizedBox(height: 20),
+
+              // ── Which platform tab does this post belong to? ──
+              SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'showOnPlatform'.tr,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: scheme.onSurface),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'showOnPlatformHint'.tr,
+                      style: TextStyle(fontSize: 11.5, color: scheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 10),
+                    Obx(() => Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: MediaPost.knownPlatforms.map((p) {
+                            final selected = selectedPlatform.value == p;
+                            return ChoiceChip(
+                              label: Text(_platformLabel(p)),
+                              selected: selected,
+                              selectedColor: scheme.primary,
+                              labelStyle: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: selected ? Colors.white : scheme.onSurface,
+                              ),
+                              onSelected: (_) => selectedPlatform.value = p,
+                            );
+                          }).toList(),
+                        )),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 60.ms, duration: 300.ms),
+
+              const SizedBox(height: 16),
 
               SectionCard(
                 child: Column(
@@ -218,12 +264,14 @@ class CreatePostScreen extends GetView<MediaController> {
                           caption: captionController.text,
                           productId: selectedProduct.value?.id,
                           productName: selectedProduct.value?.name,
+                          platform: selectedPlatform.value,
                         );
                       } else {
                         controller.createVideoPost(
                           caption: captionController.text,
                           productId: selectedProduct.value?.id,
                           productName: selectedProduct.value?.name,
+                          platform: selectedPlatform.value,
                         );
                       }
                     },
@@ -370,7 +418,6 @@ class _TypeCard extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -400,5 +447,24 @@ class _TypeCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+/// Friendly label for a platform id used in the platform picker chips.
+String _platformLabel(String p) {
+  switch (p) {
+    case 'shop':
+      return 'Store Feed'.tr;
+    case 'youtube':
+      return 'YouTube'.tr;
+    case 'tiktok':
+      return 'TikTok'.tr;
+    case 'instagram':
+      return 'Instagram'.tr;
+    case 'facebook':
+      return 'Facebook'.tr;
+    case 'telegram':
+      return 'Telegram'.tr;
+    default:
+      return p;
   }
 }

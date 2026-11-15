@@ -13,6 +13,8 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../data/services/shared_preferences_service.dart';
 import 'package:geocoding/geocoding.dart' as geo;
 
+import 'azan_controller.dart';
+
 class IslamicController extends GetxController {
   final SharedPreferencesService _prefs = SharedPreferencesService();
 
@@ -29,6 +31,11 @@ class IslamicController extends GetxController {
   var isLoading = false.obs;
   var currentLocation = ''.obs;
   var errorMessage = ''.obs;
+
+  // Next-prayer countdown (computed locally from the fetched timetable)
+  var nextPrayerName = ''.obs;
+  var countdownText = '00:00:00'.obs;
+  Timer? _countdownTimer;
 
   // Tasbih
   var tasbihCount = 0.obs;
@@ -79,12 +86,69 @@ class IslamicController extends GetxController {
     _loadHijriDate();
     fetchPrayerTimes();
     startQiblaCompass();
+    _startCountdownTicker();
   }
 
   @override
   void onClose() {
     _compassSubscription?.cancel();
+    _countdownTimer?.cancel();
     super.onClose();
+  }
+
+  /// Ticks every second and recomputes the next-prayer countdown from the
+  /// most recent fetched timetable. Purely additive — nothing existing
+  /// depends on this.
+  void _startCountdownTicker() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateCountdown());
+  }
+
+  void _updateCountdown() {
+    if (prayerTimes.isEmpty) return;
+    const order = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    final now = DateTime.now();
+
+    DateTime? nextDt;
+    String nextName = '';
+    for (final name in order) {
+      final raw = prayerTimes[name];
+      if (raw == null) continue;
+      final parts = raw.split(':');
+      if (parts.length < 2) continue;
+      final h = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      if (h == null || m == null) continue;
+      final dt = DateTime(now.year, now.month, now.day, h, m);
+      if (dt.isAfter(now) && (nextDt == null || dt.isBefore(nextDt))) {
+        nextDt = dt;
+        nextName = name;
+      }
+    }
+
+    // Past Isha → countdown to tomorrow's Fajr.
+    if (nextDt == null) {
+      final raw = prayerTimes['Fajr'];
+      if (raw != null) {
+        final parts = raw.split(':');
+        if (parts.length >= 2) {
+          final h = int.tryParse(parts[0]);
+          final m = int.tryParse(parts[1]);
+          if (h != null && m != null) {
+            nextDt = DateTime(now.year, now.month, now.day + 1, h, m);
+            nextName = 'Fajr';
+          }
+        }
+      }
+    }
+
+    if (nextDt == null) return;
+    nextPrayerName.value = nextName;
+    final diff = nextDt.difference(now);
+    final hh = diff.inHours.toString().padLeft(2, '0');
+    final mm = (diff.inMinutes % 60).toString().padLeft(2, '0');
+    final ss = (diff.inSeconds % 60).toString().padLeft(2, '0');
+    countdownText.value = '$hh:$mm:$ss';
   }
 
   // islamic_controller.dart
@@ -184,6 +248,8 @@ class IslamicController extends GetxController {
       await _reverseGeocode(location.latitude, location.longitude);
       await _fetchPrayerTimesByCoords(location.latitude, location.longitude);
 
+      await _fetchPrayerTimesByCoords(location.latitude, location.longitude);
+      AzanController.to.reschedule(lat: location.latitude, lng: location.longitude);   // ← add
     } catch (e) {
       errorMessage.value = _friendlyError(e, fallback: 'Error fetching prayer times. Please try again.');
     } finally {

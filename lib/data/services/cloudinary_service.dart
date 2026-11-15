@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../config/cloudinary_config.dart';
+import '../../core/utils/error_helper.dart';
 import 'video_compressor.dart';
 
 class CloudinaryService {
@@ -245,7 +246,7 @@ class CloudinaryService {
       }
     } on DioException catch (e) {
       print('Dio error uploading video: ${e.message}');
-      throw Exception('Network error while uploading video: ${e.message}');
+      throw AppException(ErrorHelper.friendly(e));
     }
   }
 

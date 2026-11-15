@@ -42,7 +42,9 @@ class ProductController extends GetxController {
   // Form fields
   var productName = ''.obs;
   var productCategory = ''.obs;
-  var productImage = ''.obs;
+  var productImage = ''.obs; // legacy single-image mirror (== joined productImages)
+  var productImages = <String>[].obs; // multi-photo gallery (first = cover)
+  var isUploadingImage = false.obs;
   var purchasePrice = 0.0.obs;
   var sellingPrice = 0.0.obs;
   var quantity = 0.0.obs;
@@ -245,7 +247,7 @@ class ProductController extends GetxController {
         id: Helpers.generateId(),
         name: productName.value.trim(),
         category: productCategory.value.trim(),
-        image: productImage.value.trim(),
+        image: Product.joinImages(productImages),
         purchasePrice: purchasePrice.value,
         sellingPrice: sellingPrice.value,
         quantity: quantity.value,
@@ -312,7 +314,7 @@ class ProductController extends GetxController {
       final updatedProduct = selectedProduct.value!.copyWith(
         name: productName.value.trim(),
         category: productCategory.value.trim(),
-        image: productImage.value.trim(),
+        image: Product.joinImages(productImages),
         purchasePrice: purchasePrice.value,
         sellingPrice: sellingPrice.value,
         quantity: quantity.value,
@@ -561,6 +563,7 @@ class ProductController extends GetxController {
     productName.value = product.name;
     productCategory.value = product.category;
     productImage.value = product.image;
+    productImages.assignAll(product.images);
     purchasePrice.value = product.purchasePrice;
     sellingPrice.value = product.sellingPrice;
     quantity.value = product.quantity;
@@ -575,6 +578,7 @@ class ProductController extends GetxController {
     productName.value = '';
     productCategory.value = '';
     productImage.value = '';
+    productImages.clear();
     purchasePrice.value = 0.0;
     sellingPrice.value = 0.0;
     quantity.value = 0.0;
@@ -589,8 +593,38 @@ class ProductController extends GetxController {
     minQuantityError.value = '';
   }
 
+  // ───────────────────── MULTI-PHOTO FORM API ─────────────────────
+
+  /// Appends an uploaded photo to the gallery.
+  void addProductImage(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return;
+    productImages.add(trimmed);
+    productImage.value = Product.joinImages(productImages);
+  }
+
+  /// Removes the photo at [index] from the gallery.
+  void removeProductImage(int index) {
+    if (index < 0 || index >= productImages.length) return;
+    productImages.removeAt(index);
+    productImage.value = Product.joinImages(productImages);
+  }
+
+  /// Promotes the photo at [index] to cover (moves it to the front).
+  void setMainProductImage(int index) {
+    if (index <= 0 || index >= productImages.length) return;
+    final url = productImages.removeAt(index);
+    productImages.insert(0, url);
+    productImage.value = Product.joinImages(productImages);
+  }
+
+  /// Legacy single-image setter — now appends to the gallery so existing
+  /// call sites keep working unchanged.
   void setImage(String url) {
-    productImage.value = url;
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return;
+    productImages.add(trimmed);
+    productImage.value = Product.joinImages(productImages);
   }
 
   List<Product> getProductsByCategory(String categoryName) {

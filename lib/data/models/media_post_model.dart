@@ -11,6 +11,11 @@ class MediaPost {
   final String postedBy;
   final String createdAt;
 
+  /// Which social platform tab this post belongs to. Older rows (and the
+  /// general store feed) use 'shop'. Valid: shop, youtube, tiktok,
+  /// instagram, facebook, telegram.
+  final String platform;
+
   MediaPost({
     this.id = '',
     required this.type,
@@ -21,10 +26,15 @@ class MediaPost {
     this.productName = '',
     this.postedBy = '',
     this.createdAt = '',
+    this.platform = 'shop',
   });
 
   bool get isVideo => type == 'video';
   bool get hasLinkedProduct => productId.isNotEmpty;
+
+  static const List<String> knownPlatforms = [
+    'shop', 'youtube', 'tiktok', 'instagram', 'facebook', 'telegram',
+  ];
 
   Map<String, dynamic> toMap() => {
     'id': id,
@@ -36,6 +46,7 @@ class MediaPost {
     'productName': productName,
     'postedBy': postedBy,
     'createdAt': createdAt,
+    'platform': platform,
   };
 
   factory MediaPost.fromMap(Map<String, dynamic> map) => MediaPost(
@@ -48,5 +59,6 @@ class MediaPost {
     productName: map['productName']?.toString() ?? '',
     postedBy: map['postedBy']?.toString() ?? '',
     createdAt: map['createdAt']?.toString() ?? '',
+    platform: map['platform']?.toString() ?? 'shop',
   );
 }

@@ -1,5 +1,5 @@
 class QuranAyah {
-  final int number; // global ayah number (1-6236)
+  final int number; // global ayah number (1-6236) — also the audio CDN index
   final String text; // Uthmani Arabic text
   final int numberInSurah;
   final int juz;
@@ -7,7 +7,9 @@ class QuranAyah {
   final int surahNumber;
   final String surahName; // Arabic name
   final String surahEnglishName;
-  final String? translation;
+
+  /// edition identifier (en.sahih / am.sadiq / ar.muyassar) -> translation
+  final Map<String, String> translations;
 
   const QuranAyah({
     required this.number,
@@ -18,10 +20,18 @@ class QuranAyah {
     required this.surahNumber,
     required this.surahName,
     required this.surahEnglishName,
-    this.translation,
+    this.translations = const {},
   });
 
+  /// Backward-compatible single translation accessor.
+  String? get translation =>
+      translations.isEmpty ? null : translations.values.first;
+
   QuranAyah copyWithTranslation(String? translation) {
+    final next = Map<String, String>.from(translations);
+    if (translation != null && next.isNotEmpty) {
+      next[next.keys.first] = translation;
+    }
     return QuranAyah(
       number: number,
       text: text,
@@ -31,7 +41,7 @@ class QuranAyah {
       surahNumber: surahNumber,
       surahName: surahName,
       surahEnglishName: surahEnglishName,
-      translation: translation,
+      translations: next,
     );
   }
 }
@@ -65,20 +75,42 @@ class QuranSurahMeta {
   );
 }
 
+/// One Quran translation language offered in the reader — verified
+/// identifiers on the AlQuran Cloud API.
 class TranslationEdition {
   final String identifier;
   final String displayName;
-  const TranslationEdition(this.identifier, this.displayName);
+  final String nativeLabel; // shown on the reader's language chips
+  const TranslationEdition(this.identifier, this.displayName, this.nativeLabel);
 }
 
-/// A small, curated set of well-known translation editions available on the
-/// AlQuran Cloud API. Add more identifiers from
-/// https://api.alquran.cloud/v1/edition?type=translation as needed.
 const List<TranslationEdition> availableTranslations = [
-  TranslationEdition('en.sahih', 'English — Saheeh International'),
-  TranslationEdition('en.pickthall', 'English — Pickthall'),
-  TranslationEdition('en.yusufali', 'English — Yusuf Ali'),
-  TranslationEdition('ur.jalandhry', 'Urdu — Jalandhry'),
-  TranslationEdition('fr.hamidullah', 'French — Hamidullah'),
-  TranslationEdition('id.indonesian', 'Indonesian — Kemenag'),
+  TranslationEdition('en.sahih', 'English — Saheeh International', 'English'),
+  TranslationEdition('am.sadiq', 'Amharic — ሳዲቅ & ሳኒ ሐቢብ', 'አማርኛ'),
+  TranslationEdition('ar.muyassar', 'Arabic — Muyassar Tafsir', 'العربية'),
+];
+
+/// Reciters offered for audio recitation (all verified audio editions on
+/// the islamic.network CDN). Alafasy is the house default.
+class ReciterEdition {
+  final String identifier;
+  final String displayName;
+  const ReciterEdition(this.identifier, this.displayName);
+}
+
+const List<ReciterEdition> availableReciters = [
+  ReciterEdition('ar.alafasy', 'Mishary Alafasy'),
+  ReciterEdition('ar.abdulbasitmurattal', 'Abdul Basit (Murattal)'),
+  ReciterEdition('ar.husary', 'Al-Husary'),
+  ReciterEdition('ar.husarymujawwad', 'Al-Husary (Mujawwad)'),
+  ReciterEdition('ar.minshawi', 'Al-Minshawi'),
+  ReciterEdition('ar.minshawimujawwad', 'Al-Minshawi (Mujawwad)'),
+  ReciterEdition('ar.abdurrahmaansudais', 'Abdurrahman As-Sudais'),
+  ReciterEdition('ar.shaatree', 'Abu Bakr Ash-Shaatree'),
+  ReciterEdition('ar.mahermuaiqly', 'Maher Al-Muaiqly'),
+  ReciterEdition('ar.saoodshuraym', 'Saud Ash-Shuraym'),
+  ReciterEdition('ar.hudhaify', 'Ali Al-Hudhaify'),
+  ReciterEdition('ar.ahmedajamy', 'Ahmad Al-Ajamy'),
+  ReciterEdition('ar.muhammadayyoub', 'Muhammad Ayyub'),
+  ReciterEdition('ar.muhammadjibreel', 'Muhammad Jibreel'),
 ];

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:smart_stock/presentation/controllers/azan_controller.dart';
 import 'package:smart_stock/presentation/controllers/setup_controller.dart';
 import 'package:smart_stock/data/services/shared_preferences_service.dart';
 import 'package:smart_stock/app/routes/app_pages.dart';
@@ -24,6 +25,7 @@ void main() async {
   final sheetsService = Get.put(GoogleSheetsService());
   Get.lazyPut(() => SetupController());
   Get.put(ThemeController());
+  Get.put(AzanController(), permanent: true);
 
   final headerInitializer = SheetHeaderInitializer(sheetsService);
   await headerInitializer.ensureHeadersExist();
@@ -37,8 +39,15 @@ void main() async {
 
   print('📊 [MAIN] Logged in: $isLoggedIn, Role: $role');
 
+  // FIRST-RUN LANGUAGE GATE — the very first launch asks the user to pick
+  // their language (English / አማርኛ / العربية / Afaan Oromoo) on an
+  // illustrated welcome screen, then flows on to the normal destination.
+  final languageChosen = prefs.getBool('languageChosen') ?? false;
+
   String initialRoute;
-  if (isLoggedIn && role == 'admin') {
+  if (!languageChosen) {
+    initialRoute = AppRoutes.languageSelection;
+  } else if (isLoggedIn && role == 'admin') {
     initialRoute = AppRoutes.dashboard;
   } else if (isLoggedIn && role == 'customer') {
     initialRoute = AppRoutes.customerHome;
@@ -77,6 +86,11 @@ class MyApp extends StatelessWidget {
           Locale('en', 'US'),
           Locale('am', 'ET'),
           Locale('ar', 'SA'),
+          // NOTE: Afaan Oromoo ('om_ET') is fully supported through GetX
+          // translations (AppLocalization). It is intentionally NOT listed
+          // in supportedLocales because flutter_localizations does not ship
+          // built-in Material widgets for 'om' — listing it would crash at
+          // startup. All .tr strings work in Oromo regardless.
         ],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         navigatorObservers: [mediaRouteObserver],

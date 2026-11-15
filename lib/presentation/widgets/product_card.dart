@@ -53,7 +53,7 @@ class ProductCard extends StatelessWidget {
                     AspectRatio(
                       aspectRatio: 1.15, // image now owns most of the card
                       child: ProductImageBox(
-                        imageUrl: product.image,
+                        imageUrl: product.coverImage,
                         height: double.infinity,
                         borderRadius: 0,
                       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../app/themes/app_theme.dart';
 import '../../controllers/social_links_controller.dart';
 
 class AdminSocialLinksScreen extends StatefulWidget {
@@ -10,48 +11,51 @@ class AdminSocialLinksScreen extends StatefulWidget {
 }
 
 class _AdminSocialLinksScreenState extends State<AdminSocialLinksScreen> {
+  bool _obscureApiKey = true;
+
+  // WhatsApp stays a single number.
   late final TextEditingController whatsappCtrl;
-  late final TextEditingController youtubeCtrl;
-  late final TextEditingController telegramCtrl;
-  late final TextEditingController instagramCtrl;
-  late final TextEditingController facebookCtrl;
-  late final TextEditingController tiktokCtrl;
+  late final TextEditingController youtubeHandleCtrl;
+  late final TextEditingController youtubeApiKeyCtrl;
+
+  // Every other platform supports several links.
+  late final _LinkList youtubeList, telegramList, instagramList, facebookList, tiktokList;
+  late final _LinkList tiktokFeedList, instagramFeedList, facebookFeedList;
 
   @override
   void initState() {
     super.initState();
     final controller = SocialLinksController.to;
 
-    // Use existing stored value, or fallback to default editable URL
     whatsappCtrl = TextEditingController(
       text: controller.whatsapp.value.isNotEmpty ? controller.whatsapp.value : 'https://wa.me/',
     );
-    // Use existing stored value, or fallback to default editable URL
-    youtubeCtrl = TextEditingController(
-      text: controller.youtube.value.isNotEmpty ? controller.youtube.value : 'https://youtube.com/',
-    );
-    telegramCtrl = TextEditingController(
-      text: controller.telegram.value.isNotEmpty ? controller.telegram.value : 'https://t.me/',
-    );
-    instagramCtrl = TextEditingController(
-      text: controller.instagram.value.isNotEmpty ? controller.instagram.value : 'https://instagram.com/',
-    );
-    facebookCtrl = TextEditingController(
-      text: controller.facebook.value.isNotEmpty ? controller.facebook.value : 'https://facebook.com/',
-    );
-    tiktokCtrl = TextEditingController(
-      text: controller.tiktok.value.isNotEmpty ? controller.tiktok.value : 'https://tiktok.com/@',
-    );
+
+    youtubeList = _LinkList('https://youtube.com/', controller.youtube.value);
+    telegramList = _LinkList('https://t.me/', controller.telegram.value);
+    instagramList = _LinkList('https://instagram.com/', controller.instagram.value);
+    facebookList = _LinkList('https://facebook.com/', controller.facebook.value);
+    tiktokList = _LinkList('https://tiktok.com/@', controller.tiktok.value);
+
+    tiktokFeedList = _LinkList('https://', controller.tiktokFeed.value);
+    instagramFeedList = _LinkList('https://', controller.instagramFeed.value);
+    facebookFeedList = _LinkList('https://', controller.facebookFeed.value);
+
+    youtubeHandleCtrl = TextEditingController(text: controller.youtubeHandle.value);
+    youtubeApiKeyCtrl = TextEditingController(text: controller.youtubeApiKey.value);
   }
 
   @override
   void dispose() {
     whatsappCtrl.dispose();
-    youtubeCtrl.dispose();
-    telegramCtrl.dispose();
-    instagramCtrl.dispose();
-    facebookCtrl.dispose();
-    tiktokCtrl.dispose();
+    for (final l in [
+      youtubeList, telegramList, instagramList, facebookList, tiktokList,
+      tiktokFeedList, instagramFeedList, facebookFeedList,
+    ]) {
+      l.dispose();
+    }
+    youtubeHandleCtrl.dispose();
+    youtubeApiKeyCtrl.dispose();
     super.dispose();
   }
 
@@ -63,7 +67,9 @@ class _AdminSocialLinksScreenState extends State<AdminSocialLinksScreen> {
     return Scaffold(
       appBar: AppBar(title: Text('Social Media Links'.tr)),
       body: Obx(() {
-        if (controller.isLoading.value && controller.whatsapp.value.isEmpty && controller.telegram.value.isEmpty) {
+        if (controller.isLoading.value &&
+            controller.whatsapp.value.isEmpty &&
+            controller.telegram.value.isEmpty) {
           return const Center(child: CircularProgressIndicator.adaptive());
         }
         return SingleChildScrollView(
@@ -76,6 +82,8 @@ class _AdminSocialLinksScreenState extends State<AdminSocialLinksScreen> {
                 style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
               ),
               const SizedBox(height: 20),
+
+              // WhatsApp: single field
               _LinkField(
                 icon: Icons.chat_bubble_outline_rounded,
                 label: 'WhatsApp'.tr,
@@ -83,67 +91,160 @@ class _AdminSocialLinksScreenState extends State<AdminSocialLinksScreen> {
                 controller: whatsappCtrl,
               ),
               const SizedBox(height: 14),
-              _LinkField(
-                icon: Icons.send_outlined,
-                label: 'Telegram'.tr,
-                defaultPrefix: 'https://t.me/',
-                controller: telegramCtrl,
-              ),
+
+              // Multi-link platforms
+              _MultiLinkField(icon: Icons.send_outlined, label: 'Telegram'.tr, list: telegramList),
               const SizedBox(height: 14),
-              _LinkField(
-                icon: Icons.play_circle,
-                label: 'Youtube'.tr,
-                defaultPrefix: 'https://youtube.com/',
-                controller: youtubeCtrl,
-              ),
+              _MultiLinkField(icon: Icons.play_circle, label: 'Youtube'.tr, list: youtubeList),
               const SizedBox(height: 14),
-              _LinkField(
-                icon: Icons.camera_alt_outlined,
-                label: 'Instagram'.tr,
-                defaultPrefix: 'https://instagram.com/',
-                controller: instagramCtrl,
-              ),
+              _MultiLinkField(icon: Icons.camera_alt_outlined, label: 'Instagram'.tr, list: instagramList),
               const SizedBox(height: 14),
-              _LinkField(
-                icon: Icons.facebook_outlined,
-                label: 'Facebook'.tr,
-                defaultPrefix: 'https://facebook.com/',
-                controller: facebookCtrl,
-              ),
+              _MultiLinkField(icon: Icons.facebook_outlined, label: 'Facebook'.tr, list: facebookList),
               const SizedBox(height: 14),
-              _LinkField(
-                icon: Icons.music_note_outlined,
-                label: 'TikTok'.tr,
-                defaultPrefix: 'https://tiktok.com/@',
-                controller: tiktokCtrl,
+              _MultiLinkField(icon: Icons.music_note_outlined, label: 'TikTok'.tr, list: tiktokList),
+              const SizedBox(height: 24),
+
+              // ── Media Hub: latest posts feed (TikTok / Instagram / Facebook) ──
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: MejlisPalette.emerald.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: MejlisPalette.emerald.withOpacity(0.25)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'postsFeedSetup'.tr,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'postsFeedSetupHint'.tr,
+                      style: TextStyle(fontSize: 11.5, color: scheme.onSurfaceVariant, height: 1.4),
+                    ),
+                    const SizedBox(height: 12),
+                    _MultiLinkField(
+                      icon: Icons.music_note_outlined,
+                      label: 'TikTok feed URL',
+                      list: tiktokFeedList,
+                    ),
+                    const SizedBox(height: 8),
+                    _MultiLinkField(
+                      icon: Icons.camera_alt_outlined,
+                      label: 'Instagram feed URL',
+                      list: instagramFeedList,
+                    ),
+                    const SizedBox(height: 8),
+                    _MultiLinkField(
+                      icon: Icons.facebook_outlined,
+                      label: 'Facebook feed URL',
+                      list: facebookFeedList,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Media Hub: live YouTube channel feed configuration ──
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: MejlisPalette.emerald.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: MejlisPalette.emerald.withOpacity(0.25)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.podcasts_rounded, color: Color(0xFFFF0000), size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'youtubeFeedSetup'.tr,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'youtubeFeedSetupHint'.tr,
+                      style: TextStyle(fontSize: 11.5, color: scheme.onSurfaceVariant, height: 1.4),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: youtubeHandleCtrl,
+                      keyboardType: TextInputType.url,
+                      decoration: InputDecoration(
+                        labelText: 'youtubeChannelHandle'.tr,
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
+                        hintText: '@SadatMejlis',
+                        prefixIcon: const Icon(Icons.alternate_email_rounded, size: 19),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: youtubeApiKeyCtrl,
+                      keyboardType: TextInputType.text,
+                      obscureText: _obscureApiKey,
+                      decoration: InputDecoration(
+                        labelText: 'youtubeApiKey'.tr,
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
+                        hintText: 'AIza...',
+                        prefixIcon: const Icon(Icons.key_rounded, size: 19),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureApiKey ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                            size: 19,
+                          ),
+                          onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 28),
+
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: scheme.primary, padding: const EdgeInsets.symmetric(vertical: 14)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: scheme.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
                   onPressed: controller.isLoading.value
                       ? null
                       : () {
-                    // Clean up fields: if user hasn't added anything beyond default prefix, save as empty
-                    final whatsapp = whatsappCtrl.text.trim() == 'https://wa.me/' ? '' : whatsappCtrl.text.trim();
-                    final telegram = telegramCtrl.text.trim() == 'https://t.me/' ? '' : telegramCtrl.text.trim();
-                    final instagram = instagramCtrl.text.trim() == 'https://instagram.com/' ? '' : instagramCtrl.text.trim();
-                    final facebook = facebookCtrl.text.trim() == 'https://facebook.com/' ? '' : facebookCtrl.text.trim();
-                    final tiktok = tiktokCtrl.text.trim() == 'https://tiktok.com/@' ? '' : tiktokCtrl.text.trim();
-                    final youtube = youtubeCtrl.text.trim() == 'https://youtube.com/@' ? '' : youtubeCtrl.text.trim();
+                    // If WhatsApp still holds only the default prefix, save as empty.
+                    final whatsapp = whatsappCtrl.text.trim() == 'https://wa.me/'
+                        ? ''
+                        : whatsappCtrl.text.trim();
 
                     controller.saveLinks(
                       whatsapp: whatsapp,
-                      telegram: telegram,
-                      instagram: instagram,
-                      facebook: facebook,
-                      tiktok: tiktok,
-                      youtube: youtube
+                      telegram: telegramList.joined,
+                      instagram: instagramList.joined,
+                      facebook: facebookList.joined,
+                      tiktok: tiktokList.joined,
+                      youtube: youtubeList.joined,
+                      youtubeHandle: youtubeHandleCtrl.text.trim(),
+                      youtubeApiKey: youtubeApiKeyCtrl.text.trim(),
+                      tiktokFeed: tiktokFeedList.joined,
+                      instagramFeed: instagramFeedList.joined,
+                      facebookFeed: facebookFeedList.joined,
                     );
                   },
                   child: controller.isLoading.value
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
                       : Text('Save'.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -155,6 +256,105 @@ class _AdminSocialLinksScreenState extends State<AdminSocialLinksScreen> {
   }
 }
 
+/// A growable list of link fields for one platform.
+class _LinkList {
+  final String prefix;
+  final List<TextEditingController> fields = [];
+  final List<TextEditingController> _removed = [];
+
+  _LinkList(this.prefix, String stored) {
+    final parts = SocialLinksController.split(stored);
+    for (final p in parts.isEmpty ? [prefix] : parts) {
+      fields.add(_make(p));
+    }
+  }
+
+  TextEditingController _make(String text) {
+    final c = TextEditingController(text: text);
+    c.addListener(() {
+      // Keep a valid scheme but allow any host (so pasted www. links work).
+      if (!c.text.startsWith('http')) {
+        c.value = TextEditingValue(
+          text: prefix,
+          selection: TextSelection.collapsed(offset: prefix.length),
+        );
+      }
+    });
+    return c;
+  }
+
+  void add() => fields.add(_make(prefix));
+  void removeAt(int i) => _removed.add(fields.removeAt(i));
+
+  /// 'a|b', ignoring fields still holding only the default prefix.
+  String get joined => fields
+      .map((c) => c.text.trim())
+      .where((t) => t.isNotEmpty && t != prefix)
+      .join('|');
+
+  void dispose() {
+    for (final c in [...fields, ..._removed]) {
+      c.dispose();
+    }
+  }
+}
+
+class _MultiLinkField extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final _LinkList list;
+  const _MultiLinkField({required this.icon, required this.label, required this.list});
+
+  @override
+  State<_MultiLinkField> createState() => _MultiLinkFieldState();
+}
+
+class _MultiLinkFieldState extends State<_MultiLinkField> {
+  @override
+  Widget build(BuildContext context) {
+    final list = widget.list;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (int i = 0; i < list.fields.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: list.fields[i],
+                    keyboardType: TextInputType.url,
+                    decoration: InputDecoration(
+                      labelText: list.fields.length > 1 ? '${widget.label} ${i + 1}' : widget.label,
+                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                      prefixIcon: Icon(widget.icon),
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                if (list.fields.length > 1)
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    onPressed: () => setState(() => list.removeAt(i)),
+                  ),
+              ],
+            ),
+          ),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton.icon(
+            onPressed: () => setState(list.add),
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: Text('Add another'.tr),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Single-link field with a protected prefix (used for WhatsApp).
 class _LinkField extends StatefulWidget {
   final IconData icon;
   final String label;
@@ -189,7 +389,7 @@ class _LinkFieldState extends State<_LinkField> {
     final text = widget.controller.text;
     final prefix = widget.defaultPrefix;
 
-    // Prevent user from backspacing into or destroying the protocol prefix
+    // Prevent the user from backspacing into or destroying the protocol prefix.
     if (!text.startsWith(prefix)) {
       widget.controller.value = TextEditingValue(
         text: prefix,

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/dashboard_controller.dart';
 import '../../controllers/theme_controller.dart';
 import '../../widgets/app_kits_collection.dart';
 import '../../widgets/customer_bottom_nar_bar.dart';
+import '../../widgets/mejlis_kit.dart';
 import '../auth/customer_welcome_screen.dart';
 
 /// Settings screen scoped to what a customer actually needs: their own
@@ -34,9 +37,9 @@ class CustomerSettingsScreen extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         slivers: [
           SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
+            expandedHeight: 235,
             floating: false,
+            pinned: true,
             elevation: 0,
             scrolledUnderElevation: 4,
             surfaceTintColor: scheme.surface,
@@ -52,13 +55,22 @@ class CustomerSettingsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.4), width: 1),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.4),
+                        width: 1,
+                      ),
                       image: dashboard.storeLogo.value.isNotEmpty
-                          ? DecorationImage(image: NetworkImage(dashboard.storeLogo.value), fit: BoxFit.cover)
+                          ? DecorationImage(
+                        image: NetworkImage(dashboard.storeLogo.value),
+                        fit: BoxFit.cover,
+                      )
                           : null,
                     ),
                     child: dashboard.storeLogo.value.isEmpty
-                        ? const Icon(Icons.storefront_rounded, color: Colors.white)
+                        ? const Icon(
+                      Icons.storefront_rounded,
+                      color: Colors.white,
+                    )
                         : null,
                   ),
                 ),
@@ -73,19 +85,19 @@ class CustomerSettingsScreen extends StatelessWidget {
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 17,
-                  shadows: [Shadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 2))],
+                  shadows: [
+                    Shadow(
+                      color: Colors.black38,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
               ),
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CustomPaint(
-                    painter: _SettingsHeaderPainter(
-                      primaryColor: scheme.primary,
-                      secondaryColor: scheme.tertiary,
-                      isDark: isDark,
-                    ),
-                  ),
+                  const MejlisHeaderBackground(),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -104,52 +116,40 @@ class CustomerSettingsScreen extends StatelessWidget {
                     left: 20,
                     right: 20,
                     bottom: 50,
-                    child: Obx(() => Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(2.5),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withOpacity(0.6),
-                                Colors.white.withOpacity(0.15),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Colors.white,
-                            child: Icon(
-                              Icons.person,
-                              size: 30,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                auth.isLoggedIn.value ? auth.username.value : 'Not logged in'.tr,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  shadows: [Shadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 1))],
+                    child: Obx(
+                          () => Row(
+                        children: [
+                          const _ProfileAvatar(size: 52),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  auth.isLoggedIn.value
+                                      ? auth.username.value
+                                      : 'Not logged in'.tr,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black38,
+                                        blurRadius: 6,
+                                        offset: Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    )),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -178,21 +178,42 @@ class CustomerSettingsScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 SectionCard(
                   padding: EdgeInsets.zero,
-                  child: Obx(() => SwitchListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    secondary: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    clipBehavior: Clip.antiAlias,
+                    child: Obx(
+                          () => SwitchListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        secondary: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6366F1).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.dark_mode_rounded,
+                            color: Color(0xFF6366F1),
+                          ),
+                        ),
+                        title: Text(
+                          'Dark Mode'.tr,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        value: themeController.themeMode.value == ThemeMode.dark,
+                        onChanged: (value) => themeController.setThemeMode(
+                          value ? ThemeMode.dark : ThemeMode.light,
+                        ),
                       ),
-                      child: const Icon(Icons.dark_mode_rounded, color: Color(0xFF6366F1)),
                     ),
-                    title: Text('Dark Mode'.tr, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                    value: themeController.themeMode.value == ThemeMode.dark,
-                    onChanged: (value) => themeController.setThemeMode(value ? ThemeMode.dark : ThemeMode.light),
-                  )),
+                  ),
                 ),
 
                 const SizedBox(height: 24),
@@ -206,6 +227,8 @@ class CustomerSettingsScreen extends StatelessWidget {
                       _LanguageOption(label: 'አማርኛ', locale: const Locale('am', 'ET')),
                       const Divider(height: 20),
                       _LanguageOption(label: 'العربية', locale: const Locale('ar', 'SA')),
+                      const Divider(height: 20),
+                      _LanguageOption(label: 'Afaan Oromoo', locale: const Locale('om', 'ET')),
                     ],
                   ),
                 ),
@@ -250,6 +273,28 @@ class CustomerSettingsScreen extends StatelessWidget {
                     ],
                   ),
                 )),
+                const SizedBox(height: 24),
+                _SectionHeader(title: 'Support'.tr, icon: Icons.headset_mic_outlined, color: const Color(0xFFC9A227)),
+                const SizedBox(height: 10),
+                SectionCard(
+                  padding: EdgeInsets.zero,
+                  child: _SettingTile(
+                    icon: Icons.support_agent_rounded,
+                    iconColor: const Color(0xFF0B6E4F),
+                    title: 'contactUs'.tr,
+                    subtitle: 'callBranch'.tr,
+                    onTap: () => Get.toNamed(AppRoutes.contactUs),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+                _SectionHeader(
+                  title: 'Developer Contact'.tr,
+                  icon: Icons.code_rounded,
+                  color: const Color(0xFF0EA5E9),
+                ),
+                const SizedBox(height: 10),
+                const _DeveloperContactCard(),
                 const SizedBox(height: 24),
                 _SectionHeader(title: 'Session'.tr, icon: Icons.logout_rounded, color: Colors.red),
                 const SizedBox(height: 10),
@@ -526,4 +571,277 @@ class _SettingsHeaderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _SettingsHeaderPainter oldDelegate) =>
       oldDelegate.primaryColor != primaryColor || oldDelegate.secondaryColor != secondaryColor || oldDelegate.isDark != isDark;
+}
+/// Illustrated profile placeholder: white figure on a blue gradient,
+/// inside a glassy white ring.
+class _ProfileAvatar extends StatelessWidget {
+  final double size;
+  const _ProfileAvatar({this.size = 52});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      padding: const EdgeInsets.all(2.5),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.9),
+            Colors.white.withOpacity(0.25),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E3A8A).withOpacity(0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: CustomPaint(
+          painter: _ProfileAvatarPainter(),
+          size: Size.square(size - 5),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileAvatarPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final rect = Offset.zero & size;
+
+    // Blue background gradient
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF161F2B), Color(0xFF13182C), Color(0xFF010A29)],
+          stops: [0.0, 0.55, 1.0],
+        ).createShader(rect),
+    );
+
+    // Soft light bloom, top-left
+    canvas.drawCircle(
+      Offset(w * 0.25, h * 0.15),
+      w * 0.42,
+      Paint()
+        ..color = Colors.white.withOpacity(0.22)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, w * 0.16),
+    );
+
+    // Shoulders / torso
+    final body = Path()
+      ..moveTo(w * 0.12, h)
+      ..cubicTo(w * 0.12, h * 0.74, w * 0.28, h * 0.63, w * 0.5, h * 0.63)
+      ..cubicTo(w * 0.72, h * 0.63, w * 0.88, h * 0.74, w * 0.88, h)
+      ..close();
+
+    canvas.drawPath(
+      body,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.white, Color(0xFFDBEAFE)],
+        ).createShader(rect),
+    );
+
+    // Head shadow cast onto the shoulders
+    final headCenter = Offset(w * 0.5, h * 0.37);
+    final headRadius = w * 0.18;
+    canvas.save();
+    canvas.clipPath(body);
+    canvas.drawCircle(
+      headCenter.translate(0, h * 0.09),
+      headRadius * 1.1,
+      Paint()
+        ..color = const Color(0xFF1E2747).withOpacity(0.22)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, w * 0.04),
+    );
+    canvas.restore();
+
+    // Head
+    canvas.drawCircle(
+      headCenter,
+      headRadius,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Color(0xFFE0EDFF)],
+        ).createShader(Rect.fromCircle(center: headCenter, radius: headRadius)),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Developer / company contact card (Tixolve). Tap any row to copy.
+class _DeveloperContactCard extends StatelessWidget {
+  const _DeveloperContactCard();
+
+  static const _phone = '0906464607';
+  static const _telegram = '@Tixolve_admin';
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(Icons.business_rounded, color: scheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tixolve',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Developed by Tixolve'.tr,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          const _CopyableContactRow(
+            icon: Icons.phone_rounded,
+            color: Color(0xFF10B981),
+            label: 'Phone',
+            value: _phone,
+          ),
+          const Divider(height: 20),
+          const _CopyableContactRow(
+            icon: Icons.send_rounded,
+            color: Color(0xFF229ED9),
+            label: 'Telegram',
+            value: _telegram,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CopyableContactRow extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+
+  const _CopyableContactRow({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  Future<void> _copy() async {
+    await Clipboard.setData(ClipboardData(text: value));
+    Get.closeAllSnackbars();
+    Get.snackbar(
+      'Copied'.tr,
+      '$value ${'copied to clipboard'.tr}',
+      colorText: Colors.white,
+      backgroundColor: color,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+      duration: const Duration(seconds: 2),
+      icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: _copy,
+      onLongPress: _copy,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label.tr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    textDirection: TextDirection.ltr,
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.copy_rounded,
+              size: 20,
+              color: scheme.onSurfaceVariant.withOpacity(0.7),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
